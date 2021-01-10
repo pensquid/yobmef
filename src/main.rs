@@ -1,5 +1,5 @@
 use yobmef::*;
-mod chess;
+mod bitboard;
 
 fn main() {
   let mut engine = Engine::new();
