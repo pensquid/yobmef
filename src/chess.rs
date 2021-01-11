@@ -132,15 +132,8 @@ impl Piece {
         }
     }
 
-    // Probably a shitty way to do this
     pub fn can_promote_to(&self) -> bool {
-        match self {
-            Piece::Knight => true,
-            Piece::Bishop => true,
-            Piece::Rook => true,
-            Piece::Queen => true,
-            _ => false,
-        }
+        self != &Piece::Pawn
     }
 }
 
