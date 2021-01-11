@@ -282,8 +282,6 @@ impl Board {
         // Switch side to move
         self.side_to_move = self.side_to_move.other();
 
-        // Bad Option usage I know but I was lazy and wanted to use ?
-        // TODO: Pls refactor uli
         Some(())
     }
 }
