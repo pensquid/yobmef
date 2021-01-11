@@ -102,6 +102,7 @@ impl Piece {
         }
     }
 
+    // TODO: Remove duplication (you could change as_char without changing from_char!)
     pub fn as_char(&self) -> char {
         match self {
             Piece::Pawn => 'p',
@@ -113,6 +114,7 @@ impl Piece {
         }
     }
 
+    // Note: ch must be a lowercase p,n,b,r,q,k
     pub fn from_char(ch: char) -> Option<Piece> {
         match ch {
             'p' => Some(Piece::Pawn),
@@ -133,7 +135,7 @@ impl Piece {
     }
 
     pub fn can_promote_to(&self) -> bool {
-        self != &Piece::Pawn
+        self != &Piece::Pawn && self != &Piece::King
     }
 }
 
@@ -294,8 +296,6 @@ impl Board {
         // Switch side to move
         self.side_to_move = self.side_to_move.other();
 
-        // Bad Option usage I know but I was lazy and wanted to use ?
-        // TODO: Pls refactor uli
         Some(())
     }
 }
