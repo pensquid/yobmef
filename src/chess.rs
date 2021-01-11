@@ -6,10 +6,15 @@ pub const NUM_PIECES: usize = 6;
 
 pub const STARTING_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Square(pub u8);
 
 impl Square {
-    fn from_notation(rank: char, file: char) -> Option<Square> {
+    pub fn new(rank: u8, file: u8) -> Square {
+        Square((rank * 8) + file)
+    }
+
+    pub fn from_notation(rank: char, file: char) -> Option<Square> {
         let rank = rank as u8;
         let file = file as u8;
 
@@ -21,6 +26,22 @@ impl Square {
         let square = (rank_index * 8) + file_index;
 
         Some(Square(square))
+    }
+
+    pub fn rank(&self) -> u8 { self.0 / 8 }
+    pub fn file(&self) -> u8 { self.0 % 8 }
+
+    pub fn up(&self, ranks: u8) -> Square {
+        Square::new(self.rank() + ranks, self.file())
+    }
+    pub fn down(&self, ranks: u8) -> Square {
+        Square::new(self.rank() - ranks, self.file())
+    }
+    pub fn left(&self, files: u8) -> Square {
+        Square::new(self.rank(), self.file() - files)
+    }
+    pub fn right(&self, files: u8) -> Square {
+        Square::new(self.rank(), self.file() + files)
     }
 }
 
@@ -41,11 +62,11 @@ impl Movement {
 
         let from_file = lan.next()?;
         let from_rank = lan.next()?;
-        let from_square = Square::from_notation(from_rank, from_file)? as u32;
+        let from_square = Square::from_notation(from_rank, from_file)?;
 
         let to_file = lan.next()?;
         let to_rank = lan.next()?;
-        let to_square = Square::from_square(to_rank, to_file)? as u32;
+        let to_square = Square::from_notation(to_rank, to_file)?;
 
         let mut promote = None;
         if let Some(ch) = lan.next() {
@@ -148,7 +169,7 @@ impl Piece {
 pub struct Board {
     pieces: [BitBoard; NUM_PIECES],
     color_combined: [BitBoard; NUM_COLORS],
-    en_passant: Option<u8>,
+    en_passant: Option<Square>,
     castling: u8, // 4 bits needed, from rtl: white kingside, white queenside, black kingside, black queenside
     side_to_move: Color,
 }
@@ -159,12 +180,12 @@ impl fmt::Display for Board {
 
         for rank_index in 0..8 {
             for file_index in 0..8 {
-                let square = (rank_index * 8) + file_index;
+                let square = Square::new(rank_index, file_index);
 
-                if self.color_combined[Color::White as usize].get(square as u32) {
-                    board[7 - rank_index][file_index] = 'w';
-                } else if self.color_combined[Color::Black as usize].get(square as u32) {
-                    board[7 - rank_index][file_index] = 'b';
+                if self.color_combined[Color::White as usize].get(square) {
+                    board[7 - (rank_index as usize)][file_index as usize] = 'w';
+                } else if self.color_combined[Color::Black as usize].get(square) {
+                    board[7 - (rank_index as usize)][file_index as usize] = 'b';
                 }
             }
         }
@@ -198,11 +219,11 @@ impl Board {
         let mut rank_index = 8;
         while let Some(rank) = board_split.next() {
             rank_index -= 1;
-            let mut file_index = 0;
+            let mut file_index: u8 = 0;
 
             for piece_char in rank.chars() {
                 if piece_char.is_numeric() {
-                    file_index += piece_char.to_digit(10)?;
+                    file_index += piece_char.to_digit(10)? as u8;
                 } else {
                     let piece = Piece::from_char(piece_char.to_ascii_lowercase())?;
                     let color = if piece_char.is_uppercase() {
@@ -210,7 +231,7 @@ impl Board {
                     } else {
                         Color::Black
                     };
-                    let square = (8 * rank_index) + file_index;
+                    let square = Square::new(rank_index, file_index);
 
                     board.pieces[piece as usize].flip_mut(square);
                     board.color_combined[color as usize].flip_mut(square);
@@ -233,7 +254,7 @@ impl Board {
 
         let en_passant = fen_split.next()?.as_bytes();
         if en_passant.len() == 2 {
-            board.en_passant = Square::from_square(en_passant[1] as char, en_passant[0] as char);
+            board.en_passant = Square::from_notation(en_passant[1] as char, en_passant[0] as char);
         }
 
         Some(board)
@@ -291,9 +312,9 @@ impl Board {
         self.color_combined[color as usize].flip_mut(movement.from_square);
         self.color_combined[color as usize].flip_mut(movement.to_square);
 
-        if (piece == Piece::Pawn) && (movement.to_square - movement.from_square == 16) {
+        if (piece == Piece::Pawn) && (movement.to_square.rank() - movement.from_square.rank() == 2) {
             // En passant
-            self.en_passant = Some((movement.to_square - 8) as u8);
+            self.en_passant = Some(movement.to_square.down(1));
         } else {
             self.en_passant = None;
         }
@@ -317,9 +338,9 @@ mod tests {
         assert_eq!(b.castling, 0b1111);
         assert_eq!(b.side_to_move, Color::White);
 
-        assert!(b.pieces[Piece::Rook as usize].get(0));
-        assert!(b.pieces[Piece::Rook as usize].get(7));
-        assert!(!b.pieces[Piece::Rook as usize].get(1));
+        assert!(b.pieces[Piece::Rook as usize].get(Square::new(0, 0)));
+        assert!(b.pieces[Piece::Rook as usize].get(Square::new(0, 7)));
+        assert!(!b.pieces[Piece::Rook as usize].get(Square::new(0, 1)));
     }
 
     #[test]
@@ -336,17 +357,13 @@ mod tests {
     fn test_from_fen_e2e4() {
         let b = Board::from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")
             .expect("e2e4 fen is valid");
-        let e3 = (2 * 8) + 4;
-        let e4 = (3 * 8) + 4;
-
-        eprintln!("board:\n{}", b);
 
         // Just moved a pawn forward 2, so en_passant
-        assert_eq!(b.en_passant, Some(e3));
+        assert_eq!(b.en_passant, Some(Square::new(2, 4)));
         assert_eq!(b.castling, 0b1111);
         assert_eq!(b.side_to_move, Color::Black);
 
-        assert!(b.pieces[Piece::Pawn as usize].get(e4));
+        assert!(b.pieces[Piece::Pawn as usize].get(Square::new(3, 4)));
     }
 
     #[test]
@@ -364,15 +381,12 @@ mod tests {
 
         b.make_move_mut(Movement::from_notation("e2e4").expect("movement is valid"));
 
-        let e3 = (2 * 8) + 4;
-        let e4 = (3 * 8) + 4;
-
         // Just moved a pawn forward 2, so en_passant
-        assert_eq!(b.en_passant, Some(e3));
+        assert_eq!(b.en_passant, Some(Square::new(2, 4)));
         assert_eq!(b.castling, 0b1111);
         assert_eq!(b.side_to_move, Color::Black);
 
-        assert!(b.pieces[Piece::Pawn as usize].get(e4));
+        assert!(b.pieces[Piece::Pawn as usize].get(Square::new(3, 4)));
     }
 
     #[test]
@@ -382,8 +396,8 @@ mod tests {
         
         b.make_move_mut(Movement::from_notation("b7c8q").expect("movement is valid"));
 
-        let b7 = (6 * 8) + 1;
-        let c8 = (7 * 8) + 2;
+        let b7 = Square::new(6, 1);
+        let c8 = Square::new(7, 2);
 
         assert!(!b.pieces[Piece::Pawn as usize].get(b7));
         assert!(!b.pieces[Piece::Pawn as usize].get(c8));

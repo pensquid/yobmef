@@ -11,7 +11,7 @@ impl fmt::Display for BitBoard {
                 write!(f, " ")?;
             }
 
-            let s = if self.get(n) { "1" } else { "0" };
+            let s = if self.get(Square(n)) { "1" } else { "0" };
             write!(f, "{}", s)?;
 
             if n % 8 == 7 {
@@ -59,16 +59,16 @@ mod tests {
     #[test]
     fn test_bitboard_get_flip() {
         let b = BitBoard::new();
-        assert_eq!(b.get(0), false);
+        assert_eq!(b.get(Square::new(0, 0)), false);
 
-        let b2 = b.flip(3);
+        let b2 = b.flip(Square::new(0, 3));
         eprintln!("b2: {:?}", b2);
-        assert_eq!(b2.get(3), true);
+        assert_eq!(b2.get(Square::new(0, 3)), true);
 
-        let b3 = b2.flip(0);
+        let b3 = b2.flip(Square::new(0, 0));
         eprintln!("b3: {:?}", b3);
-        assert_eq!(b3.get(0), true);
-        assert_eq!(b3.get(3), true);
+        assert_eq!(b3.get(Square::new(0, 0)), true);
+        assert_eq!(b3.get(Square::new(0, 3)), true);
     }
 
     #[test]
