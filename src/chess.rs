@@ -55,67 +55,32 @@ impl Movement {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Color {
-    Black,
-    White,
+    White = 0,
+    Black = 1,
 }
 
-impl Color {
-    // TODO: Use proper trait (tryfrom?)
-    pub fn as_usize(&self) -> usize {
-        match self {
-            Color::White => 0,
-            Color::Black => 1,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CastlingSide {
-    WhiteKingside,
-    WhiteQueenside,
-    BlackKingside,
-    BlackQueenside,
+    WhiteKingside = 0,
+    WhiteQueenside = 1,
+    BlackKingside = 2,
+    BlackQueenside = 3,
 }
 
-impl CastlingSide {
-    // TODO: Use proper trait (tryfrom?)
-    pub fn as_usize(&self) -> usize {
-        match self {
-            CastlingSide::WhiteKingside => 0,
-            CastlingSide::WhiteQueenside => 1,
-            CastlingSide::BlackKingside => 2,
-            CastlingSide::BlackQueenside => 3,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Piece {
-    Rook,
-    Knight,
-    Bishop,
-    Queen,
-    King,
-    Pawn,
+    Rook = 0,
+    Knight = 1,
+    Bishop = 2,
+    Queen = 3,
+    King = 4,
+    Pawn = 5,
 }
 
 impl Piece {
-    // TODO: Use proper trait (tryfrom?)
-    // TODO: Use u8 instead for super important optimization
-    // (written explicitly so nobody screws with the order, ruining it.)
-    pub fn as_usize(&self) -> usize {
-        match self {
-            Piece::Pawn => 0,
-            Piece::Knight => 1,
-            Piece::Bishop => 2,
-            Piece::Rook => 3,
-            Piece::Queen => 4,
-            Piece::King => 5,
-        }
-    }
-
+    // Should use proper tryfrom trait or something
     pub fn from_usize(number: usize) -> Option<Piece> {
         match number {
             0 => Some(Piece::Pawn),
@@ -176,9 +141,9 @@ impl fmt::Display for Board {
             for file_index in 0..8 {
                 let square = (rank_index * 8) + file_index;
 
-                if self.color_combined[Color::White.as_usize()].get(square as u32) {
+                if self.color_combined[Color::White as usize].get(square as u32) {
                     board[7 - rank_index][file_index] = 'w';
-                } else if self.color_combined[Color::Black.as_usize()].get(square as u32) {
+                } else if self.color_combined[Color::Black as usize].get(square as u32) {
                     board[7 - rank_index][file_index] = 'b';
                 }
             }
@@ -227,8 +192,8 @@ impl Board {
                     };
                     let square = (8 * rank_index) + file_index;
 
-                    board.pieces[piece.as_usize()].flip_mut(square);
-                    board.color_combined[color.as_usize()].flip_mut(square);
+                    board.pieces[piece as usize].flip_mut(square);
+                    board.color_combined[color as usize].flip_mut(square);
                     file_index += 1;
                 }
             }
@@ -259,7 +224,7 @@ impl Board {
     }
 
     pub fn set_castling_mut(&mut self, side: CastlingSide, can_castle: bool) {
-        let side_bit = side.as_usize();
+        let side_bit = side as usize;
         if can_castle {
             self.castling |= 1 << side_bit;
         } else {
@@ -271,25 +236,27 @@ impl Board {
     pub fn make_move_mut(&mut self, movement: Movement) -> Option<()> {
         // Find the color
         // Who needs to handle edge cases anyways
-        let is_white = self.color_combined[Color::White.as_usize()].get(movement.from_square);
+        let is_white = self.color_combined[Color::White as usize].get(movement.from_square);
         let color = if is_white { Color::White } else { Color::Black };
 
+        if self.color_combined[color as usize].get(movement.to_square) { return None; }
+
         // Move the piece in the color grid
-        self.color_combined[color.as_usize()].flip_mut(movement.from_square);
-        self.color_combined[color.as_usize()].flip_mut(movement.to_square);
+        self.color_combined[color as usize].flip_mut(movement.from_square);
+        self.color_combined[color as usize].flip_mut(movement.to_square);
 
         // Find the piece type
         let piece = self.pieces.iter().position(|b| b.get(movement.from_square))?;
-        let piece = Piece::from_usize(piece)?;
+        let piece = Piece::from_usize(piece).unwrap();
 
         // Remove the piece
-        self.pieces[piece.as_usize()].flip_mut(movement.from_square);
+        self.pieces[piece as usize].flip_mut(movement.from_square);
 
         // Move to the destination or promote
         if let Some(promoted_piece) = movement.promote {
-            self.pieces[promoted_piece.as_usize()].flip_mut(movement.to_square);
+            self.pieces[promoted_piece as usize].flip_mut(movement.to_square);
         } else {
-            self.pieces[piece.as_usize()].flip_mut(movement.to_square);
+            self.pieces[piece as usize].flip_mut(movement.to_square);
         }
 
         // Bad Option usage I know but I was lazy and wanted to use ?
@@ -310,9 +277,9 @@ mod tests {
         assert_eq!(b.castling, 0b1111);
         assert_eq!(b.side_to_move, Color::White);
 
-        assert!(b.pieces[Piece::Rook.as_usize()].get(0));
-        assert!(b.pieces[Piece::Rook.as_usize()].get(7));
-        assert!(!b.pieces[Piece::Rook.as_usize()].get(1));
+        assert!(b.pieces[Piece::Rook as usize].get(0));
+        assert!(b.pieces[Piece::Rook as usize].get(7));
+        assert!(!b.pieces[Piece::Rook as usize].get(1));
     }
 
     #[test]
@@ -339,7 +306,7 @@ mod tests {
         assert_eq!(b.castling, 0b1111);
         assert_eq!(b.side_to_move, Color::Black);
 
-        assert!(b.pieces[Piece::Pawn.as_usize()].get(e4));
+        assert!(b.pieces[Piece::Pawn as usize].get(e4));
     }
 
     #[test]
