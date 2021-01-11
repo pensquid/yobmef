@@ -6,25 +6,30 @@ pub const NUM_PIECES: usize = 6;
 
 pub const STARTING_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-fn position_to_square(rank: char, file: char) -> Option<u8> {
-    let rank = rank as u8;
-    let file = file as u8;
+pub struct Square(pub u8);
 
-    if rank < b'1' || rank > b'8' { return None; }
-    if file < b'a' || file > b'h' { return None; }
+impl Square {
+    fn from_notation(rank: char, file: char) -> Option<Square> {
+        let rank = rank as u8;
+        let file = file as u8;
 
-    let rank_index = rank - b'1';
-    let file_index = file - b'a';
-    let square = (rank_index * 8) + file_index;
+        if rank < b'1' || rank > b'8' { return None; }
+        if file < b'a' || file > b'h' { return None; }
 
-    Some(square)
+        let rank_index = rank - b'1';
+        let file_index = file - b'a';
+        let square = (rank_index * 8) + file_index;
+
+        Some(Square(square))
+    }
 }
+
 
 // Calling it Movement and not Move because "move" is a keyword
 #[derive(Debug)]
 pub struct Movement {
-    from_square: u32,
-    to_square: u32,
+    from_square: Square,
+    to_square: Square,
     promote: Option<Piece>,
 }
 
@@ -36,11 +41,11 @@ impl Movement {
 
         let from_file = lan.next()?;
         let from_rank = lan.next()?;
-        let from_square = position_to_square(from_rank, from_file)? as u32;
+        let from_square = Square::from_notation(from_rank, from_file)? as u32;
 
         let to_file = lan.next()?;
         let to_rank = lan.next()?;
-        let to_square = position_to_square(to_rank, to_file)? as u32;
+        let to_square = Square::from_square(to_rank, to_file)? as u32;
 
         let mut promote = None;
         if let Some(ch) = lan.next() {
@@ -228,7 +233,7 @@ impl Board {
 
         let en_passant = fen_split.next()?.as_bytes();
         if en_passant.len() == 2 {
-            board.en_passant = position_to_square(en_passant[1] as char, en_passant[0] as char);
+            board.en_passant = Square::from_square(en_passant[1] as char, en_passant[0] as char);
         }
 
         Some(board)

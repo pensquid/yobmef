@@ -1,3 +1,4 @@
+use crate::chess::Square;
 use std::fmt;
 
 #[derive(Debug, Clone, Copy)]
@@ -29,25 +30,25 @@ impl BitBoard {
     }
 
     #[inline]
-    pub fn get(&self, n: u32) -> bool {
-        ((self.0 >> n) & 1) != 0
+    pub fn get(&self, sq: Square) -> bool {
+        ((self.0 >> sq.0) & 1) != 0
     }
 
     #[inline]
-    pub fn flip(&self, n: u32) -> BitBoard {
-        BitBoard(self.0 ^ (1 << n))
+    pub fn flip(&self, sq: Square) -> BitBoard {
+        BitBoard(self.0 ^ (1 << sq.0))
     }
 
     #[inline]
-    pub fn flip_mut(&mut self, n: u32) {
-        self.0 ^= 1 << n;
+    pub fn flip_mut(&mut self, sq: Square) {
+        self.0 ^= 1 << sq.0;
     }
 
     #[inline]
     pub fn population(&mut self) -> u8 {
         // https://www.chessprogramming.org/Population_Count
 
-        (0..64).map(|i| self.get(i) as u8).sum()
+        (0..64).map(|i| self.get(Square(i)) as u8).sum()
     }
 }
 
@@ -73,19 +74,16 @@ mod tests {
     #[test]
     fn test_bitboard_population() {
         let mut b = BitBoard::new();
-        b.flip_mut(12);
-        b.flip_mut(13);
-        b.flip_mut(21);
-        b.flip_mut(63);
+        b.0 |= 0b1111;
         assert_eq!(b.population(), 4);
     }
 
     #[test]
     fn test_bitboard_display() {
         let mut b = BitBoard::new();
-        b.flip_mut(0);
-        b.flip_mut(7);
-        b.flip_mut(63);
+        b.flip_mut(Square(0));
+        b.flip_mut(Square(7));
+        b.flip_mut(Square(63));
         assert_eq!(
             format!("{}", b),
             "\
