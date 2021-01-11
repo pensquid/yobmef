@@ -102,6 +102,7 @@ impl Piece {
         }
     }
 
+    // TODO: Remove duplication (you could change as_char without changing from_char!)
     pub fn as_char(&self) -> char {
         match self {
             Piece::Pawn => 'p',
@@ -113,6 +114,7 @@ impl Piece {
         }
     }
 
+    // Note: ch must be a lowercase p,n,b,r,q,k
     pub fn from_char(ch: char) -> Option<Piece> {
         match ch {
             'p' => Some(Piece::Pawn),
