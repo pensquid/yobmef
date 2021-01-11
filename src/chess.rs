@@ -236,6 +236,12 @@ impl Board {
         Board::from_fen(STARTING_FEN).unwrap()
     }
 
+    pub fn set_castling(&self, side: CastlingSide, can_castle: bool) -> Board {
+        let mut board = self.clone();
+        board.set_castling_mut(side, can_castle);
+        board
+    }
+
     pub fn set_castling_mut(&mut self, side: CastlingSide, can_castle: bool) {
         let side_bit = side as u8;
         if can_castle {
@@ -243,6 +249,12 @@ impl Board {
         } else {
             self.castling &= !(1 << side_bit);
         }
+    }
+
+    pub fn make_move(&self, movement: Movement) -> Board {
+        let mut board = self.clone();
+        board.make_move_mut(movement);
+        board
     }
 
     pub fn make_move_mut(&mut self, movement: Movement) -> Option<()> {
