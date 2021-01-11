@@ -260,8 +260,11 @@ impl Board {
 
     pub fn set_castling_mut(&mut self, side: CastlingSide, can_castle: bool) {
         let side_bit = side.as_usize();
-        let with_cleared_bit = self.castling & !(1 << side_bit);
-        self.castling = with_cleared_bit | ((can_castle as u8) << side_bit);
+        if can_castle {
+            self.castling |= 1 << side_bit;
+        } else {
+            self.castling &= !(1 << side_bit);
+        }
     }
 
     // TODO: Write tests (too tired)
