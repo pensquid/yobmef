@@ -1,25 +1,9 @@
 use std::str::{FromStr, Split};
-
-#[derive(Debug)]
-pub struct Move {
-    notation: String,
-}
-
-impl Move {
-    pub fn from_notation(notation: String) -> Move {
-        Move { notation }
-    }
-}
-
-#[derive(Debug)]
-pub enum Position {
-    StartPos(Vec<Move>),
-    // FEN(FEN, Vec<Move>),
-}
+use crate::chess;
 
 #[derive(Debug)]
 pub struct GoOptions {
-    search_moves: Option<Vec<Move>>,
+    search_moves: Option<Vec<chess::Movement>>,
 
     white_time: Option<u64>,
     black_time: Option<u64>,
@@ -35,7 +19,7 @@ pub struct GoOptions {
 }
 
 impl GoOptions {
-    fn new() -> GoOptions {
+    fn empty() -> GoOptions {
         GoOptions {
             search_moves: None,
 
@@ -70,7 +54,7 @@ impl Go {
     fn new(instruction: GoInstruction) -> Go {
         Go {
             instruction,
-            option: GoOptions::new(),
+            option: GoOptions::empty(),
         }
     }
 }
@@ -82,7 +66,7 @@ pub enum EngineMessage {
     IsReady,
 
     UCINewGame,
-    Position(Position),
+    Position(chess::Board, Vec<chess::Movement>),
     Go(Go),
 
     Stop,
@@ -92,14 +76,14 @@ pub enum EngineMessage {
     DontMissTheShredderChessAnnualBarbeque, // Very important 10/10
 }
 
-fn get_moves(mut words: Split<char>) -> Vec<Move> {
+fn get_moves(mut words: Split<char>) -> Option<Vec<chess::Movement>> {
     let mut moves = Vec::new();
 
     while let Some(word) = words.next() {
-        moves.push(Move::from_notation(word.to_string()));
+        moves.push(chess::Movement::from_notation(word)?);
     }
 
-    return moves;
+    Some(moves)
 }
 
 pub fn parse(s: &str) -> Option<EngineMessage> {
@@ -116,8 +100,8 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
 
         "ucinewgame" => EngineMessage::UCINewGame,
         "position" => match words.next()? {
+            // TODO: Clean up the duplication here
             "startpos" => {
-                // Skip until we get the moves keyword
                 loop {
                     let word = words.next();
                     match word {
@@ -127,8 +111,24 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
                     }
                 }
 
-                EngineMessage::Position(Position::StartPos(get_moves(words)))
+                EngineMessage::Position(chess::Board::from_start_pos(), get_moves(words)?)
             }
+
+            "fen" => {
+                let mut fen = Vec::new();
+                loop {
+                    let word = words.next();
+                    match word {
+                        Some("moves") => break,
+                        Some(chunk) => fen.push(chunk),
+                        None => return None,
+                    }
+                }
+                let fen = fen.join(" ");
+
+                EngineMessage::Position(chess::Board::from_fen(&fen)?, get_moves(words)?)
+            }
+
             _ => return None,
         },
         "go" => {
@@ -142,7 +142,7 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
                     "searchmoves" => {
                         let mut moves = Vec::new();
                         while let Some(word) = words.next() {
-                            moves.push(Move::from_notation(word.to_string()));
+                            moves.push(chess::Movement::from_notation(word)?);
                         }
 
                         go.as_mut()?.option.search_moves = Some(moves);

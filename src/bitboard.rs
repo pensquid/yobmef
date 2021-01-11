@@ -45,7 +45,7 @@ impl BitBoard {
 
     #[inline]
     pub fn population(&mut self) -> u8 {
-        // https://www.chessprogramming.org/Population_Count#The_PopCount_routine
+        // https://www.chessprogramming.org/Population_Count
 
         (0..64).map(|i| self.get(i) as u8).sum()
     }

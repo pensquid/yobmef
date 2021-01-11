@@ -1,7 +1,9 @@
 use std::io;
+use uci::EngineMessage;
+use chess::Board;
 
-pub mod uci;
 pub mod bitboard;
+pub mod uci;
 pub mod chess;
 
 pub struct Engine {}
@@ -31,15 +33,22 @@ impl Engine {
     }
 
     fn handle(&mut self, msg: uci::EngineMessage) {
-        use uci::EngineMessage;
-
         match msg {
             EngineMessage::UCI => {
                 println!("id name Yobmef");
                 println!("id author PwnSquad");
                 println!("uciok");
-            }
+            },
             EngineMessage::IsReady => println!("readyok"),
+
+            EngineMessage::Position(board, moves) => {
+                let mut board: Board = board.clone();
+                for movement in moves {
+                    board.make_move_mut(movement);
+                }
+                eprintln!("current position:\n{}", board);
+            },
+
             _ => {}
         }
     }
