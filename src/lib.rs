@@ -40,6 +40,7 @@ impl Engine {
                 println!("uciok");
             },
             EngineMessage::IsReady => println!("readyok"),
+            EngineMessage::Quit => std::process::exit(0),
 
             EngineMessage::Position(board, moves) => {
                 let mut board: Board = board.clone();
