@@ -4,7 +4,7 @@ use std::fmt;
 pub const NUM_COLORS: usize = 2;
 pub const NUM_PIECES: usize = 6;
 
-pub const STARTING_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+pub const STARTING_FEN: &'static str = "rn bqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 fn position_to_square(rank: char, file: char) -> Option<u8> {
     let rank = rank as u8;
@@ -127,8 +127,8 @@ impl Piece {
 
     pub fn as_char_color(&self, color: Color) -> char {
         match color {
-            Color::White => self.as_char(),
-            Color::Black => self.as_char().to_ascii_uppercase(),
+            Color::White => self.as_char().to_ascii_uppercase(),
+            Color::Black => self.as_char(),
         }
     }
 
@@ -237,7 +237,7 @@ impl Board {
     }
 
     pub fn set_castling_mut(&mut self, side: CastlingSide, can_castle: bool) {
-        let side_bit = side as usize;
+        let side_bit = side as u8;
         if can_castle {
             self.castling |= 1 << side_bit;
         } else {
@@ -272,9 +272,11 @@ impl Board {
         self.color_combined[color as usize].flip_mut(movement.from_square);
         self.color_combined[color as usize].flip_mut(movement.to_square);
 
-        if (piece == Piece::Pawn) && ((movement.to_square - movement.from_square) == 16) {
+        if (piece == Piece::Pawn) && (movement.to_square - movement.from_square == 16) {
             // En passant
             self.en_passant = Some((movement.to_square - 8) as u8);
+        } else {
+            self.en_passant = None;
         }
 
         // Switch side to move

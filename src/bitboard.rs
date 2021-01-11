@@ -30,7 +30,7 @@ impl BitBoard {
 
     #[inline]
     pub fn get(&self, n: u32) -> bool {
-        (self.0 & (1 << n)) != 0
+        ((self.0 >> n) & 1) != 0
     }
 
     #[inline]
@@ -40,7 +40,7 @@ impl BitBoard {
 
     #[inline]
     pub fn flip_mut(&mut self, n: u32) {
-        self.0 = self.0 ^ (1 << n);
+        self.0 ^= 1 << n;
     }
 
     #[inline]
