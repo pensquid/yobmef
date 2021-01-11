@@ -45,6 +45,35 @@ impl BitBoard {
     }
 
     #[inline]
+    pub fn mask(&self, mask: &BitBoard) -> BitBoard {
+        BitBoard(self.0 & mask.0)
+    }
+
+    #[inline]
+    pub fn mask_mut(&mut self, mask: &BitBoard) {
+        self.0 &= mask.0;
+    }
+
+    pub fn flip_vertical(&self) -> BitBoard {
+        let mut board = self.clone();
+        board.flip_vertical_mut();
+        board
+    }
+
+    pub fn flip_vertical_mut(&mut self) {
+        // https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating#FlipVertically
+        // Optimized algorithm with delta swaps
+        // As long as it works :D
+
+        const K1: u64 = 0x00FF00FF00FF00FF;
+        const K2: u64 = 0x0000FFFF0000FFFF;
+
+        self.0 = ((self.0 >> 8) & K1) | ((self.0 & K1) << 8);
+        self.0 = ((self.0 >> 16) & K2) | ((self.0 & K2) << 16);
+        self.0 = (self.0 >> 32) | (self.0 << 32);
+    }
+
+    #[inline]
     pub fn population(&mut self) -> u8 {
         // https://www.chessprogramming.org/Population_Count
 
@@ -97,5 +126,20 @@ mod tests {
       0 0 0 0 0 0 0 1\n\
     "
         );
+    }
+
+    #[test]
+    fn test_flip_vertical() {
+        let mut b = BitBoard::new();
+
+        b.flip_mut(Square::new(0, 0));
+        b.flip_mut(Square::new(1, 1));
+        b.flip_mut(Square::new(2, 7));
+        b.flip_vertical_mut();
+
+        assert!(!b.get(Square::new(0, 0)));
+        assert!(b.get(Square::new(7, 0)));
+        assert!(b.get(Square::new(6, 1)));
+        assert!(b.get(Square::new(5, 7)));
     }
 }

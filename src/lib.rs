@@ -1,10 +1,11 @@
+use chess::Board;
 use std::io;
 use uci::EngineMessage;
-use chess::Board;
 
+pub mod analyze;
 pub mod bitboard;
-pub mod uci;
 pub mod chess;
+pub mod uci;
 
 pub struct Engine {}
 
@@ -38,7 +39,7 @@ impl Engine {
                 println!("id name Yobmef");
                 println!("id author PwnSquad");
                 println!("uciok");
-            },
+            }
             EngineMessage::IsReady => println!("readyok"),
             EngineMessage::Quit => std::process::exit(0),
 
@@ -48,7 +49,10 @@ impl Engine {
                     board.make_move_mut(movement);
                 }
                 eprintln!("current position:\n{}", board);
-            },
+
+                let score = analyze::get_score(board);
+                println!("info score cp {}", score);
+            }
 
             _ => {}
         }

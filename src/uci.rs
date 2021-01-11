@@ -1,5 +1,5 @@
-use std::str::{FromStr, Split};
 use crate::chess;
+use std::str::{FromStr, Split};
 
 #[derive(Debug)]
 pub struct GoOptions {

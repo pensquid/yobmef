@@ -18,8 +18,12 @@ impl Square {
         let rank = rank as u8;
         let file = file as u8;
 
-        if rank < b'1' || rank > b'8' { return None; }
-        if file < b'a' || file > b'h' { return None; }
+        if rank < b'1' || rank > b'8' {
+            return None;
+        }
+        if file < b'a' || file > b'h' {
+            return None;
+        }
 
         let rank_index = rank - b'1';
         let file_index = file - b'a';
@@ -28,8 +32,12 @@ impl Square {
         Some(Square(square))
     }
 
-    pub fn rank(&self) -> u8 { self.0 / 8 }
-    pub fn file(&self) -> u8 { self.0 % 8 }
+    pub fn rank(&self) -> u8 {
+        self.0 / 8
+    }
+    pub fn file(&self) -> u8 {
+        self.0 % 8
+    }
 
     pub fn up(&self, ranks: u8) -> Square {
         Square::new(self.rank() + ranks, self.file())
@@ -44,7 +52,6 @@ impl Square {
         Square::new(self.rank(), self.file() + files)
     }
 }
-
 
 // Calling it Movement and not Move because "move" is a keyword
 #[derive(Debug)]
@@ -167,11 +174,11 @@ impl Piece {
 
 #[derive(Debug, Clone)]
 pub struct Board {
-    pieces: [BitBoard; NUM_PIECES],
-    color_combined: [BitBoard; NUM_COLORS],
-    en_passant: Option<Square>,
-    castling: u8, // 4 bits needed, from rtl: white kingside, white queenside, black kingside, black queenside
-    side_to_move: Color,
+    pub pieces: [BitBoard; NUM_PIECES],
+    pub color_combined: [BitBoard; NUM_COLORS],
+    pub en_passant: Option<Square>,
+    pub side_to_move: Color,
+    pub castling: u8, // 4 bits needed, from rtl: white kingside, white queenside, black kingside, black queenside
 }
 
 impl fmt::Display for Board {
@@ -291,15 +298,22 @@ impl Board {
         let is_white = self.color_combined[Color::White as usize].get(movement.from_square);
         let color = if is_white { Color::White } else { Color::Black };
 
-        if self.color_combined[color as usize].get(movement.to_square) { return None; }
+        if self.color_combined[color as usize].get(movement.to_square) {
+            return None;
+        }
 
         // Find the piece type
-        let piece = self.pieces.iter().position(|b| b.get(movement.from_square))?;
+        let piece = self
+            .pieces
+            .iter()
+            .position(|b| b.get(movement.from_square))?;
         let piece = Piece::from_usize(piece).unwrap();
 
         // Move to the destination or promote
         if let Some(promoted_piece) = movement.promote {
-            if !promoted_piece.can_promote_to() { return None; }
+            if !promoted_piece.can_promote_to() {
+                return None;
+            }
             self.pieces[promoted_piece as usize].flip_mut(movement.to_square);
         } else {
             self.pieces[piece as usize].flip_mut(movement.to_square);
@@ -312,12 +326,17 @@ impl Board {
         self.color_combined[color as usize].flip_mut(movement.from_square);
         self.color_combined[color as usize].flip_mut(movement.to_square);
 
-        if (piece == Piece::Pawn) && (movement.to_square.rank() - movement.from_square.rank() == 2) {
-            // En passant
-            self.en_passant = Some(movement.to_square.down(1));
+        // Store en passant passing square
+        let is_double_move = if color == Color::White {
+            movement.to_square.rank() - movement.from_square.rank() == 2
         } else {
-            self.en_passant = None;
-        }
+            movement.from_square.rank() - movement.to_square.rank() == 2
+        };
+
+        if piece == Piece::Pawn && is_double_move {
+            let passing_square = if color == Color::White { movement.to_square.up(1) } else { movement.to_square.down(1) };
+            self.en_passant = Some(passing_square)
+        } else { self.en_passant = None; }
 
         // Switch side to move
         self.side_to_move = self.side_to_move.other();
@@ -332,7 +351,7 @@ mod tests {
 
     #[test]
     fn test_from_fen_starting() {
-        let b = Board::from_fen(STARTING_FEN).expect("starting fen is valid");
+        let b = Board::from_start_pos();
 
         assert!(b.en_passant.is_none());
         assert_eq!(b.castling, 0b1111);
@@ -373,7 +392,7 @@ mod tests {
 
     #[test]
     fn test_make_move_e2e4() {
-        let mut b = Board::from_fen(STARTING_FEN).expect("starting fen is valid");
+        let mut b = Board::from_start_pos();
 
         assert!(b.en_passant.is_none());
         assert_eq!(b.castling, 0b1111);
@@ -392,8 +411,9 @@ mod tests {
     #[test]
     fn test_make_move_promote() {
         // Very common and realistic board position 11/10
-        let mut b = Board::from_fen("1nbqkbnr/rP1ppppp/p1p5/8/8/8/1PPPPPPP/RNBQKBNR w KQk - 1 5").expect("before promotion fen is valid");
-        
+        let mut b = Board::from_fen("1nbqkbnr/rP1ppppp/p1p5/8/8/8/1PPPPPPP/RNBQKBNR w KQk - 1 5")
+            .expect("before promotion fen is valid");
+
         b.make_move_mut(Movement::from_notation("b7c8q").expect("movement is valid"));
 
         let b7 = Square::new(6, 1);
