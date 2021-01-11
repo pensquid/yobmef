@@ -61,6 +61,15 @@ pub enum Color {
     Black = 1,
 }
 
+impl Color {
+    pub fn other(&self) -> Color {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CastlingSide {
     WhiteKingside = 0,
@@ -71,12 +80,12 @@ pub enum CastlingSide {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Piece {
-    Rook = 0,
+    Pawn = 0,
     Knight = 1,
     Bishop = 2,
-    Queen = 3,
-    King = 4,
-    Pawn = 5,
+    Rook = 3,
+    Queen = 4,
+    King = 5,
 }
 
 impl Piece {
@@ -232,7 +241,6 @@ impl Board {
         }
     }
 
-    // TODO: Write tests (too tired)
     pub fn make_move_mut(&mut self, movement: Movement) -> Option<()> {
         // Find the color
         // Who needs to handle edge cases anyways
@@ -258,6 +266,14 @@ impl Board {
         } else {
             self.pieces[piece as usize].flip_mut(movement.to_square);
         }
+
+        if (piece == Piece::Pawn) && ((movement.to_square - movement.from_square) == 16) {
+            // En passant
+            self.en_passant = Some((movement.to_square - 8) as u8);
+        }
+
+        // Switch side to move
+        self.side_to_move = self.side_to_move.other();
 
         // Bad Option usage I know but I was lazy and wanted to use ?
         // TODO: Pls refactor uli
@@ -312,5 +328,26 @@ mod tests {
     #[test]
     fn test_from_fen_invalid() {
         assert!(Board::from_fen("").is_none());
+    }
+
+    #[test]
+    fn test_make_move_e2e4() {
+        let mut b = Board::from_fen(STARTING_FEN).expect("starting fen is valid");
+
+        assert!(b.en_passant.is_none());
+        assert_eq!(b.castling, 0b1111);
+        assert_eq!(b.side_to_move, Color::White);
+
+        b.make_move_mut(Movement::from_notation("e2e4").expect("movement is valid"));
+
+        let e3 = (2 * 8) + 4;
+        let e4 = (3 * 8) + 4;
+
+        // Just moved a pawn forward 2, so en_passant
+        assert_eq!(b.en_passant, Some(e3));
+        assert_eq!(b.castling, 0b1111);
+        assert_eq!(b.side_to_move, Color::Black);
+
+        assert!(b.pieces[Piece::Pawn as usize].get(e4));
     }
 }
