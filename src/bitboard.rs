@@ -1,7 +1,7 @@
 use std::fmt;
 
-#[derive(Debug)]
-pub struct BitBoard(u64);
+#[derive(Debug, Clone, Copy)]
+pub struct BitBoard(pub u64);
 
 impl fmt::Display for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
