@@ -4,7 +4,7 @@ use std::fmt;
 pub const NUM_COLORS: usize = 2;
 pub const NUM_PIECES: usize = 6;
 
-pub const STARTING_FEN: &'static str = "rn bqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+pub const STARTING_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 fn position_to_square(rank: char, file: char) -> Option<u8> {
     let rank = rank as u8;
