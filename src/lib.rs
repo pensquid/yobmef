@@ -1,6 +1,8 @@
 use std::io;
 
-mod uci;
+pub mod uci;
+pub mod bitboard;
+pub mod chess;
 
 pub struct Engine {}
 
