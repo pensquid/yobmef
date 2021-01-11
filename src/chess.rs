@@ -133,7 +133,7 @@ impl Piece {
     }
 
     pub fn can_promote_to(&self) -> bool {
-        self != &Piece::Pawn
+        self != &Piece::Pawn && self != &Piece::King
     }
 }
 
