@@ -131,6 +131,17 @@ impl Piece {
             Color::Black => self.as_char().to_ascii_uppercase(),
         }
     }
+
+    // Probably a shitty way to do this
+    pub fn can_promote_to(&self) -> bool {
+        match self {
+            Piece::Knight => true,
+            Piece::Bishop => true,
+            Piece::Rook => true,
+            Piece::Queen => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -249,23 +260,24 @@ impl Board {
 
         if self.color_combined[color as usize].get(movement.to_square) { return None; }
 
-        // Move the piece in the color grid
-        self.color_combined[color as usize].flip_mut(movement.from_square);
-        self.color_combined[color as usize].flip_mut(movement.to_square);
-
         // Find the piece type
         let piece = self.pieces.iter().position(|b| b.get(movement.from_square))?;
         let piece = Piece::from_usize(piece).unwrap();
 
-        // Remove the piece
-        self.pieces[piece as usize].flip_mut(movement.from_square);
-
         // Move to the destination or promote
         if let Some(promoted_piece) = movement.promote {
+            if !promoted_piece.can_promote_to() { return None; }
             self.pieces[promoted_piece as usize].flip_mut(movement.to_square);
         } else {
             self.pieces[piece as usize].flip_mut(movement.to_square);
         }
+
+        // Remove the piece
+        self.pieces[piece as usize].flip_mut(movement.from_square);
+
+        // Move the piece in the color grid
+        self.color_combined[color as usize].flip_mut(movement.from_square);
+        self.color_combined[color as usize].flip_mut(movement.to_square);
 
         if (piece == Piece::Pawn) && ((movement.to_square - movement.from_square) == 16) {
             // En passant
@@ -349,5 +361,20 @@ mod tests {
         assert_eq!(b.side_to_move, Color::Black);
 
         assert!(b.pieces[Piece::Pawn as usize].get(e4));
+    }
+
+    #[test]
+    fn test_make_move_promote() {
+        // Very common and realistic board position 11/10
+        let mut b = Board::from_fen("1nbqkbnr/rP1ppppp/p1p5/8/8/8/1PPPPPPP/RNBQKBNR w KQk - 1 5").expect("before promotion fen is valid");
+        
+        b.make_move_mut(Movement::from_notation("b7c8q").expect("movement is valid"));
+
+        let b7 = (6 * 8) + 1;
+        let c8 = (7 * 8) + 2;
+
+        assert!(!b.pieces[Piece::Pawn as usize].get(b7));
+        assert!(!b.pieces[Piece::Pawn as usize].get(c8));
+        assert!(b.pieces[Piece::Queen as usize].get(c8));
     }
 }
