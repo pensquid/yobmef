@@ -71,8 +71,8 @@ impl Square {
         Square::new(7 - self.rank(), self.file())
     }
 
-    pub fn orient(&self, color: Color) -> Square {
-        if color == Color::Black {
+    pub fn flip_vertical_if(&self, condition: bool) -> Square {
+        if condition {
             self.flip_vertical()
         } else {
             *self
@@ -292,6 +292,10 @@ impl Board {
 
     pub fn color_combined(&self, color: Color) -> &BitBoard {
         &self.color_combined[color as usize]
+    }
+
+    pub fn color_combined_both(&self) -> BitBoard {
+        self.color_combined(Color::White).merge(self.color_combined(Color::Black))
     }
 
     pub fn from_fen(s: &str) -> Option<Board> {

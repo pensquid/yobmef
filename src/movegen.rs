@@ -2,7 +2,6 @@ use crate::bitboard::BitBoard;
 use crate::chess::{Board, Color, Movement, Piece, Square};
 
 static mut PAWN_ATTACKS: [BitBoard; 64] = [BitBoard::empty(); 64];
-// static mut PAWN_PUSHES: [BitBoard; 64] = [BitBoard::empty(); 64];
 
 fn pawn_attacks(square: Square) -> BitBoard {
     unsafe { PAWN_ATTACKS[square.0 as usize] }
@@ -92,17 +91,16 @@ fn bitboard_to_squares(bitboard: &BitBoard) -> Vec<Square> {
 
 fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
     let all_pieces = board
-        .color_combined(Color::White)
-        .combine(&board.color_combined(Color::Black))
-        .orient(board.side_to_move);
+        .color_combined_both()
+        .flip_vertical_if(board.side_to_move == Color::Black);
     let my_pawns = board
         .pieces(Piece::Pawn)
         .mask(&board.color_combined(board.side_to_move))
-        .orient(board.side_to_move);
+        .flip_vertical_if(board.side_to_move == Color::Black);
 
     let mut their_pieces = board
         .color_combined(board.side_to_move.other())
-        .orient(board.side_to_move);
+        .flip_vertical_if(board.side_to_move == Color::Black);
     if let Some(sq) = board.en_passant {
         their_pieces.flip_mut(sq);
     }
@@ -115,29 +113,29 @@ fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
             bitboard_to_squares(&valid_attacks).iter().for_each(|s| {
                 if s.rank() == 7 {
                     moves.push(Movement::new(
-                        from_square.orient(board.side_to_move),
-                        s.orient(board.side_to_move),
+                        from_square.flip_vertical_if(board.side_to_move == Color::Black),
+                        s.flip_vertical_if(board.side_to_move == Color::Black),
                         Some(Piece::Knight),
                     ));
                     moves.push(Movement::new(
-                        from_square.orient(board.side_to_move),
-                        s.orient(board.side_to_move),
+                        from_square.flip_vertical_if(board.side_to_move == Color::Black),
+                        s.flip_vertical_if(board.side_to_move == Color::Black),
                         Some(Piece::Bishop),
                     ));
                     moves.push(Movement::new(
-                        from_square.orient(board.side_to_move),
-                        s.orient(board.side_to_move),
+                        from_square.flip_vertical_if(board.side_to_move == Color::Black),
+                        s.flip_vertical_if(board.side_to_move == Color::Black),
                         Some(Piece::Rook),
                     ));
                     moves.push(Movement::new(
-                        from_square.orient(board.side_to_move),
-                        s.orient(board.side_to_move),
+                        from_square.flip_vertical_if(board.side_to_move == Color::Black),
+                        s.flip_vertical_if(board.side_to_move == Color::Black),
                         Some(Piece::Queen),
                     ));
                 } else {
                     moves.push(Movement::new(
-                        from_square.orient(board.side_to_move),
-                        s.orient(board.side_to_move),
+                        from_square.flip_vertical_if(board.side_to_move == Color::Black),
+                        s.flip_vertical_if(board.side_to_move == Color::Black),
                         None,
                     ));
                 }
@@ -145,8 +143,11 @@ fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
 
             if !all_pieces.get(from_square.up(1).unwrap()) {
                 moves.push(Movement::new(
-                    from_square.orient(board.side_to_move),
-                    from_square.up(1).unwrap().orient(board.side_to_move),
+                    from_square.flip_vertical_if(board.side_to_move == Color::Black),
+                    from_square
+                        .up(1)
+                        .unwrap()
+                        .flip_vertical_if(board.side_to_move == Color::Black),
                     None,
                 ));
 
@@ -154,8 +155,8 @@ fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
                     let s = from_square.up(2).unwrap();
 
                     moves.push(Movement::new(
-                        from_square.orient(board.side_to_move),
-                        s.orient(board.side_to_move),
+                        from_square.flip_vertical_if(board.side_to_move == Color::Black),
+                        s.flip_vertical_if(board.side_to_move == Color::Black),
                         None,
                     ));
                 }

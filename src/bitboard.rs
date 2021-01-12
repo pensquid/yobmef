@@ -1,4 +1,4 @@
-use crate::chess::{Color, Square};
+use crate::chess::Square;
 use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,12 +55,12 @@ impl BitBoard {
     }
 
     #[inline]
-    pub fn combine(&self, with: &BitBoard) -> BitBoard {
+    pub fn merge(&self, with: &BitBoard) -> BitBoard {
         BitBoard(self.0 | with.0)
     }
 
     #[inline]
-    pub fn combine_mut(&mut self, with: &BitBoard) {
+    pub fn merge_mut(&mut self, with: &BitBoard) {
         self.0 |= with.0;
     }
 
@@ -83,16 +83,16 @@ impl BitBoard {
         self.0 = (self.0 >> 32) | (self.0 << 32);
     }
 
-    pub fn orient(&self, color: Color) -> BitBoard {
-        if color == Color::Black {
+    pub fn flip_vertical_if(&self, condition: bool) -> BitBoard {
+        if condition {
             self.flip_vertical()
         } else {
             *self
         }
     }
 
-    pub fn orient_mut(&mut self, color: Color) {
-        if color == Color::Black {
+    pub fn flip_vertical_if_mut(&mut self, condition: bool) {
+        if condition {
             self.flip_vertical_mut()
         }
     }
