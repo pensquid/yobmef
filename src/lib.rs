@@ -1,4 +1,4 @@
-use chess::{Board, Movement};
+use chess::{Board, Color, Movement};
 use std::io;
 use uci::EngineMessage;
 
@@ -76,6 +76,7 @@ impl Engine {
                     let mut sorted_moves = Vec::new();
                     moves.iter().for_each(|m| sorted_moves.push(m));
                     sorted_moves.sort_by_key(|m| analyze::get_score(&board.make_move(m)));
+                    if board.side_to_move == Color::White { sorted_moves.reverse(); }
 
                     let best_move = (*sorted_moves.get(0).unwrap()).clone();
                     println!("info pv {}", best_move.to_notation());
