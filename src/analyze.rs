@@ -50,8 +50,8 @@ fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
         _ => EMPTY_VALUE_TABLE,
     };
 
-    let bitboard = board.pieces[piece as usize];
-    let mut bitboard = bitboard.mask(&board.color_combined[color as usize]);
+    let bitboard = board.pieces(piece);
+    let mut bitboard = bitboard.mask(&board.color_combined(color));
     if color == Color::Black {
         bitboard.flip_vertical_mut()
     };

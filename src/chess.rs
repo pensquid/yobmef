@@ -39,17 +39,33 @@ impl Square {
         self.0 % 8
     }
 
-    pub fn up(&self, ranks: u8) -> Square {
-        Square::new(self.rank() + ranks, self.file())
+    pub fn up(&self, ranks: u8) -> Option<Square> {
+        if self.rank() + ranks > 7 {
+            return None;
+        }
+        Some(Square::new(self.rank() + ranks, self.file()))
     }
-    pub fn down(&self, ranks: u8) -> Square {
-        Square::new(self.rank() - ranks, self.file())
+    pub fn down(&self, ranks: u8) -> Option<Square> {
+        if ranks > self.rank() {
+            return None;
+        }
+        Some(Square::new(self.rank() - ranks, self.file()))
     }
-    pub fn left(&self, files: u8) -> Square {
-        Square::new(self.rank(), self.file() - files)
+    pub fn left(&self, files: u8) -> Option<Square> {
+        if files > self.file() {
+            return None;
+        }
+        Some(Square::new(self.rank(), self.file() - files))
     }
-    pub fn right(&self, files: u8) -> Square {
-        Square::new(self.rank(), self.file() + files)
+    pub fn right(&self, files: u8) -> Option<Square> {
+        if self.file() + files > 7 {
+            return None;
+        }
+        Some(Square::new(self.rank(), self.file() + files))
+    }
+
+    pub fn flip_vertical(&self) -> Square {
+        Square::new(7 - self.rank(), self.file())
     }
 }
 
@@ -62,6 +78,14 @@ pub struct Movement {
 }
 
 impl Movement {
+    pub fn new(from_square: Square, to_square: Square, promote: Option<Piece>) -> Movement {
+        Movement {
+            from_square,
+            to_square,
+            promote,
+        }
+    }
+
     pub fn from_notation(lan: &str) -> Option<Movement> {
         // Cursed code incoming
         // TODO: Write tests
@@ -174,11 +198,11 @@ impl Piece {
 
 #[derive(Debug, Clone)]
 pub struct Board {
-    pub pieces: [BitBoard; NUM_PIECES],
-    pub color_combined: [BitBoard; NUM_COLORS],
+    pieces: [BitBoard; NUM_PIECES],
+    color_combined: [BitBoard; NUM_COLORS],
     pub en_passant: Option<Square>,
     pub side_to_move: Color,
-    pub castling: u8, // 4 bits needed, from rtl: white kingside, white queenside, black kingside, black queenside
+    castling: u8, // 4 bits needed, from rtl: white kingside, white queenside, black kingside, black queenside
 }
 
 impl fmt::Display for Board {
@@ -189,9 +213,9 @@ impl fmt::Display for Board {
             for file_index in 0..8 {
                 let square = Square::new(rank_index, file_index);
 
-                if self.color_combined[Color::White as usize].get(square) {
+                if self.color_combined(Color::White).get(square) {
                     board[7 - (rank_index as usize)][file_index as usize] = 'w';
-                } else if self.color_combined[Color::Black as usize].get(square) {
+                } else if self.color_combined(Color::Black).get(square) {
                     board[7 - (rank_index as usize)][file_index as usize] = 'b';
                 }
             }
@@ -217,6 +241,14 @@ impl Board {
         }
     }
 
+    pub fn pieces(&self, piece: Piece) -> BitBoard {
+        self.pieces[piece as usize]
+    }
+
+    pub fn color_combined(&self, color: Color) -> BitBoard {
+        self.color_combined[color as usize]
+    }
+
     pub fn from_fen(s: &str) -> Option<Board> {
         let mut board = Board::empty();
 
@@ -240,8 +272,8 @@ impl Board {
                     };
                     let square = Square::new(rank_index, file_index);
 
-                    board.pieces[piece as usize].flip_mut(square);
-                    board.color_combined[color as usize].flip_mut(square);
+                    board.pieces(piece).flip_mut(square);
+                    board.color_combined(color).flip_mut(square);
                     file_index += 1;
                 }
             }
@@ -295,10 +327,10 @@ impl Board {
     pub fn make_move_mut(&mut self, movement: Movement) -> Option<()> {
         // Find the color
         // Who needs to handle edge cases anyways
-        let is_white = self.color_combined[Color::White as usize].get(movement.from_square);
+        let is_white = self.color_combined(Color::White).get(movement.from_square);
         let color = if is_white { Color::White } else { Color::Black };
 
-        if self.color_combined[color as usize].get(movement.to_square) {
+        if self.color_combined(color).get(movement.to_square) {
             return None;
         }
 
@@ -314,17 +346,17 @@ impl Board {
             if !promoted_piece.can_promote_to() {
                 return None;
             }
-            self.pieces[promoted_piece as usize].flip_mut(movement.to_square);
+            self.pieces(promoted_piece).flip_mut(movement.to_square);
         } else {
-            self.pieces[piece as usize].flip_mut(movement.to_square);
+            self.pieces(piece).flip_mut(movement.to_square);
         }
 
         // Remove the piece
-        self.pieces[piece as usize].flip_mut(movement.from_square);
+        self.pieces(piece).flip_mut(movement.from_square);
 
         // Move the piece in the color grid
-        self.color_combined[color as usize].flip_mut(movement.from_square);
-        self.color_combined[color as usize].flip_mut(movement.to_square);
+        self.color_combined(color).flip_mut(movement.from_square);
+        self.color_combined(color).flip_mut(movement.to_square);
 
         // Store en passant passing square
         let is_double_move = if color == Color::White {
@@ -334,9 +366,15 @@ impl Board {
         };
 
         if piece == Piece::Pawn && is_double_move {
-            let passing_square = if color == Color::White { movement.to_square.up(1) } else { movement.to_square.down(1) };
+            let passing_square = if color == Color::White {
+                movement.to_square.down(1).unwrap()
+            } else {
+                movement.to_square.up(1).unwrap()
+            };
             self.en_passant = Some(passing_square)
-        } else { self.en_passant = None; }
+        } else {
+            self.en_passant = None;
+        }
 
         // Switch side to move
         self.side_to_move = self.side_to_move.other();
@@ -357,9 +395,9 @@ mod tests {
         assert_eq!(b.castling, 0b1111);
         assert_eq!(b.side_to_move, Color::White);
 
-        assert!(b.pieces[Piece::Rook as usize].get(Square::new(0, 0)));
-        assert!(b.pieces[Piece::Rook as usize].get(Square::new(0, 7)));
-        assert!(!b.pieces[Piece::Rook as usize].get(Square::new(0, 1)));
+        assert!(b.pieces(Piece::Rook).get(Square::new(0, 0)));
+        assert!(b.pieces(Piece::Rook).get(Square::new(0, 7)));
+        assert!(!b.pieces(Piece::Rook).get(Square::new(0, 1)));
     }
 
     #[test]
@@ -382,7 +420,7 @@ mod tests {
         assert_eq!(b.castling, 0b1111);
         assert_eq!(b.side_to_move, Color::Black);
 
-        assert!(b.pieces[Piece::Pawn as usize].get(Square::new(3, 4)));
+        assert!(b.pieces(Piece::Pawn).get(Square::new(3, 4)));
     }
 
     #[test]
@@ -405,7 +443,7 @@ mod tests {
         assert_eq!(b.castling, 0b1111);
         assert_eq!(b.side_to_move, Color::Black);
 
-        assert!(b.pieces[Piece::Pawn as usize].get(Square::new(3, 4)));
+        assert!(b.pieces(Piece::Pawn).get(Square::new(3, 4)));
     }
 
     #[test]
@@ -419,8 +457,8 @@ mod tests {
         let b7 = Square::new(6, 1);
         let c8 = Square::new(7, 2);
 
-        assert!(!b.pieces[Piece::Pawn as usize].get(b7));
-        assert!(!b.pieces[Piece::Pawn as usize].get(c8));
-        assert!(b.pieces[Piece::Queen as usize].get(c8));
+        assert!(!b.pieces(Piece::Pawn).get(b7));
+        assert!(!b.pieces(Piece::Pawn).get(c8));
+        assert!(b.pieces(Piece::Queen).get(c8));
     }
 }

@@ -5,6 +5,7 @@ use uci::EngineMessage;
 pub mod analyze;
 pub mod bitboard;
 pub mod chess;
+pub mod movegen;
 pub mod uci;
 
 pub struct Engine {}

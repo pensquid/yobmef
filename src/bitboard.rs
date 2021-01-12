@@ -25,7 +25,7 @@ impl fmt::Display for BitBoard {
 
 impl BitBoard {
     #[inline]
-    pub fn new() -> Self {
+    pub const fn empty() -> Self {
         Self(0)
     }
 
@@ -52,6 +52,16 @@ impl BitBoard {
     #[inline]
     pub fn mask_mut(&mut self, mask: &BitBoard) {
         self.0 &= mask.0;
+    }
+
+    #[inline]
+    pub fn combine(&self, with: &BitBoard) -> BitBoard {
+        BitBoard(self.0 | with.0)
+    }
+
+    #[inline]
+    pub fn combine_mut(&mut self, with: &BitBoard) {
+        self.0 |= with.0;
     }
 
     pub fn flip_vertical(&self) -> BitBoard {
@@ -87,7 +97,7 @@ mod tests {
 
     #[test]
     fn test_bitboard_get_flip() {
-        let b = BitBoard::new();
+        let b = BitBoard::empty();
         assert_eq!(b.get(Square::new(0, 0)), false);
 
         let b2 = b.flip(Square::new(0, 3));
@@ -102,14 +112,14 @@ mod tests {
 
     #[test]
     fn test_bitboard_population() {
-        let mut b = BitBoard::new();
+        let mut b = BitBoard::empty();
         b.0 |= 0b1111;
         assert_eq!(b.population(), 4);
     }
 
     #[test]
     fn test_bitboard_display() {
-        let mut b = BitBoard::new();
+        let mut b = BitBoard::empty();
         b.flip_mut(Square(0));
         b.flip_mut(Square(7));
         b.flip_mut(Square(63));
@@ -130,7 +140,7 @@ mod tests {
 
     #[test]
     fn test_flip_vertical() {
-        let mut b = BitBoard::new();
+        let mut b = BitBoard::empty();
 
         b.flip_mut(Square::new(0, 0));
         b.flip_mut(Square::new(1, 1));
