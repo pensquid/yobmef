@@ -108,13 +108,7 @@ impl Movement {
     pub fn from_notation(lan: &str) -> Option<Movement> {
         let from_square = Square::from_notation(&lan.get(0..2)?)?;
         let to_square = Square::from_notation(&lan.get(2..4)?)?;
-
-        let mut promote = None;
-
-        // cursed
-        if let Some(ch) = lan.chars().nth(4) {
-            promote = Piece::from_char(ch);
-        }
+        let promote = lan.chars().nth(4).and_then(|ch| Piece::from_char(ch));
 
         Some(Movement {
             from_square,
