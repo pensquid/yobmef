@@ -153,34 +153,11 @@ fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
                 if from_square.rank() == 1 && !all_pieces.get(from_square.up(2).unwrap()) {
                     let s = from_square.up(2).unwrap();
 
-                    if s.rank() == 7 {
-                        moves.push(Movement::new(
-                            from_square.orient(board.side_to_move),
-                            s.orient(board.side_to_move),
-                            Some(Piece::Knight),
-                        ));
-                        moves.push(Movement::new(
-                            from_square.orient(board.side_to_move),
-                            s.orient(board.side_to_move),
-                            Some(Piece::Bishop),
-                        ));
-                        moves.push(Movement::new(
-                            from_square.orient(board.side_to_move),
-                            s.orient(board.side_to_move),
-                            Some(Piece::Rook),
-                        ));
-                        moves.push(Movement::new(
-                            from_square.orient(board.side_to_move),
-                            s.orient(board.side_to_move),
-                            Some(Piece::Queen),
-                        ));
-                    } else {
-                        moves.push(Movement::new(
-                            from_square.orient(board.side_to_move),
-                            s.orient(board.side_to_move),
-                            None,
-                        ));
-                    }
+                    moves.push(Movement::new(
+                        from_square.orient(board.side_to_move),
+                        s.orient(board.side_to_move),
+                        None,
+                    ));
                 }
             }
         });
