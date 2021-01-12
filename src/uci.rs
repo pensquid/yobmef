@@ -28,7 +28,7 @@ pub struct Go {
 }
 
 impl Go {
-    fn empty() -> Self {
+    pub fn empty() -> Self {
         Go {
             search_moves: None,
 
@@ -47,7 +47,7 @@ impl Go {
         }
     }
 
-    fn variant(v: GoVariant) -> Self {
+    pub fn variant(v: GoVariant) -> Self {
         let mut go = Self::empty();
         go.variant = v;
         go
