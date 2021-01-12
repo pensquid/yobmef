@@ -21,9 +21,10 @@ impl Square {
         Square((rank * 8) + file)
     }
 
-    pub fn from_notation(file: char, rank: char) -> Option<Square> {
-        let rank = rank as u8;
-        let file = file as u8;
+    pub fn from_notation(s: &str) -> Option<Square> {
+        let mut chars = s.chars();
+        let file = chars.next()? as u8;
+        let rank = chars.next()? as u8;
 
         if rank < b'1' || rank > b'8' {
             return None;
@@ -105,15 +106,13 @@ impl Movement {
     }
 
     pub fn from_notation(lan: &str) -> Option<Movement> {
-        // Cursed code incoming
-        // TODO: Write tests
-        let mut lan = lan.chars();
-
-        let from_square = Square::from_notation(lan.next()?, lan.next()?)?;
-        let to_square = Square::from_notation(lan.next()?, lan.next()?)?;
+        let from_square = Square::from_notation(&lan.get(0..2)?)?;
+        let to_square = Square::from_notation(&lan.get(2..4)?)?;
 
         let mut promote = None;
-        if let Some(ch) = lan.next() {
+
+        // cursed
+        if let Some(ch) = lan.chars().nth(4) {
             promote = Piece::from_char(ch);
         }
 
@@ -392,9 +391,9 @@ impl Board {
         board.set_castling_mut(CastlingSide::BlackKingside, castling_string.contains('k'));
         board.set_castling_mut(CastlingSide::BlackQueenside, castling_string.contains('q'));
 
-        let en_passant = fen_split.next()?.as_bytes();
+        let en_passant = fen_split.next()?;
         if en_passant.len() == 2 {
-            board.en_passant = Square::from_notation(en_passant[0] as char, en_passant[1] as char);
+            board.en_passant = Square::from_notation(&en_passant[0..2]);
         }
 
         Some(board)
@@ -482,28 +481,28 @@ impl Board {
 mod tests {
     use super::*;
 
-    fn sq(file: char, rank: char) -> Square {
-        Square::from_notation(file, rank).unwrap()
+    fn sq(s: &str) -> Square {
+        Square::from_notation(s).unwrap()
     }
 
     #[test]
     fn test_color_on() {
         let b = Board::from_start_pos();
-        assert_eq!(b.color_on(sq('e', '2')), Some(Color::White));
-        assert_eq!(b.color_on(sq('e', '7')), Some(Color::Black));
-        assert_eq!(b.color_on(sq('d', '8')), Some(Color::Black));
-        assert_eq!(b.color_on(sq('e', '3')), None);
+        assert_eq!(b.color_on(sq("e2")), Some(Color::White));
+        assert_eq!(b.color_on(sq("e7")), Some(Color::Black));
+        assert_eq!(b.color_on(sq("d8")), Some(Color::Black));
+        assert_eq!(b.color_on(sq("e3")), None);
     }
 
     #[test]
     fn test_piece_on() {
         let b = Board::from_start_pos();
-        assert_eq!(b.piece_on(sq('e', '2')), Some(Piece::Pawn));
-        assert_eq!(b.piece_on(sq('e', '7')), Some(Piece::Pawn));
-        assert_eq!(b.piece_on(sq('d', '8')), Some(Piece::Queen));
-        assert_eq!(b.piece_on(sq('a', '8')), Some(Piece::Rook));
-        assert_eq!(b.piece_on(sq('a', '1')), Some(Piece::Rook));
-        assert_eq!(b.piece_on(sq('e', '3')), None);
+        assert_eq!(b.piece_on(sq("e2")), Some(Piece::Pawn));
+        assert_eq!(b.piece_on(sq("e7")), Some(Piece::Pawn));
+        assert_eq!(b.piece_on(sq("d8")), Some(Piece::Queen));
+        assert_eq!(b.piece_on(sq("a8")), Some(Piece::Rook));
+        assert_eq!(b.piece_on(sq("a1")), Some(Piece::Rook));
+        assert_eq!(b.piece_on(sq("e3")), None);
     }
 
     #[test]
@@ -533,6 +532,7 @@ mod tests {
     fn test_from_fen_e2e4() {
         let b = Board::from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")
             .expect("e2e4 fen is valid");
+        eprintln!("board:\n{}", b);
 
         // Just moved a pawn forward 2, so en_passant
         assert_eq!(b.en_passant, Some(Square::new(2, 4)));
@@ -551,8 +551,8 @@ mod tests {
         assert_eq!(b.castling, 0b0000);
         assert_eq!(b.side_to_move, Color::White);
 
-        assert_eq!(b.piece_on(sq('e', '3')), Some(Piece::King));
-        assert_eq!(b.piece_on(sq('f', '7')), Some(Piece::Pawn));
+        assert_eq!(b.piece_on(sq("e3")), Some(Piece::King));
+        assert_eq!(b.piece_on(sq("f7")), Some(Piece::Pawn));
     }
 
     #[test]
