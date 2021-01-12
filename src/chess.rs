@@ -272,6 +272,19 @@ impl fmt::Display for Board {
 }
 
 impl Board {
+    // replace old piece with new piece, return old piece
+    // if the board is invalid, get ready for some fun debugging
+    pub fn replace_mut(&mut self, piece: Piece, square: Square) -> Option<Piece> {
+        let old_piece = self.piece_on(square);
+        if let Some(old_piece) = old_piece {
+            self.pieces[old_piece as usize].flip_mut(square);
+        }
+
+        self.pieces[piece as usize].flip_mut(square);
+
+        old_piece
+    }
+
     pub fn assert_valid(&self) {
         let bitboard = self.color_combined_both();
 
@@ -428,12 +441,12 @@ impl Board {
             if !promoted_piece.can_promote_to() {
                 return None;
             }
-            self.pieces[promoted_piece as usize].flip_mut(movement.to_square);
+            self.replace_mut(promoted_piece, movement.to_square);
         } else {
-            self.pieces[piece as usize].flip_mut(movement.to_square);
+            self.replace_mut(piece, movement.to_square);
         }
 
-        // Remove the piece
+        // Remove the piece from it's old position
         self.pieces[piece as usize].flip_mut(movement.from_square);
 
         // Move the piece in the color grid
