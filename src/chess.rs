@@ -219,6 +219,18 @@ impl Piece {
         }
     }
 
+    // TODO: Finish later
+    // pub fn as_char_fancy(&self, color: Color) -> char {
+    //     match color {
+    //         Color::White => {
+    //             match self {
+    //                 Piece::Pawn => '♙',
+    //                 Piece::Knight => '♘',
+    //             }
+    //         }
+    //     }
+    // }
+
     pub fn can_promote_to(&self) -> bool {
         self != &Piece::Pawn && self != &Piece::King
     }
@@ -235,9 +247,11 @@ pub struct Board {
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Go by rank, printing each row.
+        // Go by rank, printing each row
         for rank_index in 0..8 {
             let rank_index = 7 - rank_index;
+            write!(f, "{}", rank_index + 1)?;
+
             for file_index in 0..8 {
                 let square = Square::new(rank_index, file_index);
 
@@ -246,13 +260,12 @@ impl fmt::Display for Board {
                     None => '.',
                 };
 
-                // TODO: No space at end of line
-                write!(f, "{} ", character)?;
+                write!(f, " {}", character)?;
             }
             write!(f, "\n")?;
         }
 
-        write!(f, "")
+        write!(f, "  a b c d e f g h")
     }
 }
 
