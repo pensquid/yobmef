@@ -271,6 +271,7 @@ impl Board {
         let old_piece = self.piece_on(square);
         if let Some(old_piece) = old_piece {
             self.pieces[old_piece as usize].flip_mut(square);
+            self.color_combined[self.side_to_move.other() as usize].flip_mut(square);
         }
 
         self.pieces[piece as usize].flip_mut(square);
@@ -281,12 +282,19 @@ impl Board {
     pub fn assert_valid(&self) {
         let bitboard = self.color_combined_both();
 
-        // check for multiple pieces on the same square
         for sq in 0..64 {
             let sq = Square(sq);
+
             if bitboard.get(sq) {
+                // multiple pieces on the same square
                 let num_on_square: u8 = (0..NUM_PIECES).map(|p| self.pieces[p].get(sq) as u8).sum();
                 assert_eq!(num_on_square, 1, "multiple pieces on {}", sq);
+
+                // multiple ownership
+                let num_owners: u8 = (0..NUM_COLORS)
+                    .map(|c| self.color_combined[c].get(sq) as u8)
+                    .sum();
+                assert_eq!(num_owners, 1, "{} owners of square {}", num_owners, sq);
             }
         }
 
@@ -602,5 +610,16 @@ mod tests {
 
         assert_eq!(b.piece_on(movement.to_square), Some(Piece::Pawn));
         assert_eq!(b.piece_on(movement.from_square), None);
+    }
+
+    #[test]
+    fn test_valid_after_capture() {
+        let mut b = Board::from_fen("rnbqkbnr/ppp2ppp/8/3P4/8/2Np4/PP2PPPP/R1BQKBNR w KQkq - 0 1")
+            .expect("fen is valid");
+
+        let movement = &Movement::from_notation("e2d3").unwrap();
+        b.make_move_mut(movement).unwrap();
+
+        b.assert_valid();
     }
 }
