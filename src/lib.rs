@@ -1,4 +1,4 @@
-use chess::{Board, Color, Movement};
+use chess::{Board, Color};
 use std::io;
 use uci::EngineMessage;
 
@@ -10,15 +10,11 @@ pub mod uci;
 
 pub struct Engine {
     position: Option<Board>,
-    best_move: Option<Movement>,
 }
 
 impl Engine {
     pub fn new() -> Engine {
-        Engine {
-            position: None,
-            best_move: None,
-        }
+        Engine { position: None }
     }
 
     pub fn uci_loop(&mut self) -> io::Result<()> {
@@ -51,11 +47,7 @@ impl Engine {
             EngineMessage::Quit => std::process::exit(0),
 
             EngineMessage::Stop => {
-                eprintln!("ASdasd {:?}", self.best_move);
-                if let Some(best_move) = &self.best_move {
-                    println!("bestmove {}", best_move.to_notation());
-                    self.best_move = None;
-                }
+                //
             }
 
             EngineMessage::Position(board, moves) => {
@@ -81,8 +73,7 @@ impl Engine {
                     }
 
                     let best_move = (*sorted_moves.get(0).unwrap()).clone();
-                    println!("info pv {}", best_move.to_notation());
-                    self.best_move = Some(best_move);
+                    println!("bestmove {}", best_move.to_notation());
                 }
             }
 
