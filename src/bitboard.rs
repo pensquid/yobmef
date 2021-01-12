@@ -25,6 +25,11 @@ impl fmt::Display for BitBoard {
 
 impl BitBoard {
     #[inline]
+    pub fn sum(&self) -> u8 {
+        (0..64).map(|sq| self.get(Square(sq)) as u8).sum()
+    }
+
+    #[inline]
     pub const fn empty() -> Self {
         Self(0)
     }

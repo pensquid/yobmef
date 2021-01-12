@@ -9,6 +9,13 @@ pub const STARTING_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQK
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Square(pub u8);
 
+impl fmt::Display for Square {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let (rank, file) = self.to_notation();
+        write!(f, "{}{}", file, rank)
+    }
+}
+
 impl Square {
     pub fn new(rank: u8, file: u8) -> Square {
         Square((rank * 8) + file)
@@ -265,6 +272,29 @@ impl fmt::Display for Board {
 }
 
 impl Board {
+    pub fn assert_valid(&self) {
+        let bitboard = self.color_combined_both();
+
+        // check for multiple pieces on the same square
+        for sq in 0..64 {
+            let sq = Square(sq);
+            if bitboard.get(sq) {
+                let num_on_square: u8 = (0..NUM_PIECES).map(|p| self.pieces[p].get(sq) as u8).sum();
+                assert_eq!(num_on_square, 1, "multiple pieces on {}", sq);
+            }
+        }
+
+        // TODO: check for pawns on the 0th or 7th row
+
+        // Check number of kings (1 each)
+        let kings = self.pieces(Piece::King);
+        let num_white_kings = kings.mask(self.color_combined(Color::White)).sum();
+        assert_eq!(num_white_kings, 1, "{} white kings", num_white_kings);
+
+        let num_black_kings = kings.mask(self.color_combined(Color::Black)).sum();
+        assert_eq!(num_black_kings, 1, "{} black kings", num_black_kings);
+    }
+
     pub fn empty() -> Board {
         Board {
             pieces: [BitBoard(0); NUM_PIECES],
@@ -276,7 +306,7 @@ impl Board {
     }
 
     pub fn piece_on(&self, square: Square) -> Option<Piece> {
-        for piece in 0..6 {
+        for piece in 0..NUM_PIECES {
             if self.pieces[piece].get(square) {
                 return Some(Piece::from_usize(piece).unwrap());
             }
@@ -382,6 +412,7 @@ impl Board {
         board
     }
 
+    // TODO: Real error messages, not Option<T>
     pub fn make_move_mut(&mut self, movement: &Movement) -> Option<()> {
         let color = self.color_on(movement.from_square).unwrap();
 
@@ -390,11 +421,7 @@ impl Board {
         }
 
         // Find the piece type
-        let piece = self
-            .pieces
-            .iter()
-            .position(|b| b.get(movement.from_square))?;
-        let piece = Piece::from_usize(piece).unwrap();
+        let piece = self.piece_on(movement.from_square)?;
 
         // Move to the destination or promote
         if let Some(promoted_piece) = movement.promote {
@@ -529,6 +556,7 @@ mod tests {
         assert_eq!(b.side_to_move, Color::White);
 
         b.make_move_mut(&Movement::from_notation("e2e4").expect("movement is valid"));
+        b.assert_valid();
 
         // Just moved a pawn forward 2, so en_passant
         assert_eq!(b.en_passant, Some(Square::new(2, 4)));
@@ -545,6 +573,7 @@ mod tests {
             .expect("before promotion fen is valid");
 
         b.make_move_mut(&Movement::from_notation("b7c8q").expect("movement is valid"));
+        b.assert_valid();
 
         let b7 = Square::new(6, 1);
         let c8 = Square::new(7, 2);
@@ -552,5 +581,19 @@ mod tests {
         assert!(!b.pieces(Piece::Pawn).get(b7));
         assert!(!b.pieces(Piece::Pawn).get(c8));
         assert!(b.pieces(Piece::Queen).get(c8));
+    }
+
+    #[test]
+    fn test_make_move_capture() {
+        let mut b = Board::from_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2")
+            .expect("fen is valid");
+        eprintln!("{}", b);
+
+        let movement = &Movement::from_notation("e4d5").unwrap();
+        b.make_move_mut(movement).unwrap();
+        b.assert_valid();
+
+        assert_eq!(b.piece_on(movement.to_square), Some(Piece::Pawn));
+        assert_eq!(b.piece_on(movement.from_square), None);
     }
 }
