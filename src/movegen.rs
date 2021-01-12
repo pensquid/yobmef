@@ -179,6 +179,7 @@ mod tests {
     }
 
     fn moves_test(board: &Board, legal: &str, illegal: &str) {
+        gen_moves();
         let moves = get_moves(&board);
 
         for lan in legal.split(' ') {
@@ -198,6 +199,7 @@ mod tests {
 
     #[test]
     fn test_get_pawn_moves_startpos() {
+        gen_pawn_moves();
         let mut board = Board::from_start_pos();
 
         moves_test(&board, "e2e4 d2d3", "e2d3 e2e5 e7e5 d7d6");
@@ -208,6 +210,7 @@ mod tests {
 
     #[test]
     fn test_get_pawn_moves_endgame() {
+        gen_pawn_moves();
         let board = Board::from_fen("8/3k1p2/1R1p2P1/8/2P1N3/2Q1K3/8/8 w - - 0 1").unwrap();
 
         moves_test(&board, "c4c5 g6g7 g6f7", "f7f6 g6h7");
