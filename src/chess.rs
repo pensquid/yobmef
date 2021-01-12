@@ -308,7 +308,8 @@ impl Board {
     }
 
     pub fn color_combined_both(&self) -> BitBoard {
-        self.color_combined(Color::White).merge(self.color_combined(Color::Black))
+        self.color_combined(Color::White)
+            .merge(self.color_combined(Color::Black))
     }
 
     pub fn from_fen(s: &str) -> Option<Board> {
