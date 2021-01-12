@@ -168,3 +168,54 @@ pub fn get_moves(board: &Board) -> Vec<Movement> {
     get_pawn_moves(board, &mut moves);
     moves
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn mv(lan: &str) -> Movement {
+        Movement::from_notation(lan).unwrap()
+    }
+
+    // TODO: pretty-print board on error
+    fn moves_test(board: &Board, legal: &str, illegal: &str) {
+        let moves = get_moves(&board);
+
+        for lan in legal.split(' ') {
+            assert!(
+                moves.contains(&mv(lan)),
+                format!("{} should be legal, but it isn't", lan),
+            );
+        }
+
+        for lan in illegal.split(' ') {
+            assert!(
+                !moves.contains(&mv(lan)),
+                format!("{} should not be legal, but it is", lan),
+            );
+        }
+    }
+
+    #[test]
+    fn test_get_pawn_moves_startpos() {
+        let mut board = Board::from_start_pos();
+
+        moves_test(&board, "e2e4 d2d3", "e2e5 e7e5 d7d6");
+
+        board.side_to_move = Color::Black;
+        moves_test(&board, "e7e5 d7d6", "e2e5 e2e4 d2d3");
+    }
+
+    #[test]
+    fn test_get_pawn_moves_endgame() {
+        let board = Board::from_fen("8/3k1p2/1R1p4/6P1/2P1N3/2Q1K3/8/8 w - - 0 1").unwrap();
+
+        moves_test(&board, "c4c5 g5g6", "f7f6");
+    }
+
+    #[test]
+    fn test_get_king_moves_endgame() {
+        let board = Board::from_fen("8/3k1p2/1R1p4/6P1/2P1N3/2Q1K3/8/8 w - - 0 1").unwrap();
+        moves_test(&board, "e3e2 e3f3 e3f2", "e3e4 e3f5");
+    }
+}
