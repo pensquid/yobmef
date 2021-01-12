@@ -82,7 +82,7 @@ impl Square {
 }
 
 // Calling it Movement and not Move because "move" is a keyword
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Movement {
     from_square: Square,
     to_square: Square,
@@ -225,7 +225,7 @@ impl Piece {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Board {
     pieces: [BitBoard; NUM_PIECES],
     color_combined: [BitBoard; NUM_COLORS],

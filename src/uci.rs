@@ -1,8 +1,15 @@
 use crate::chess;
 use std::str::{FromStr, Split};
 
-#[derive(Debug)]
-pub struct GoOptions {
+#[derive(Debug, PartialEq, Eq)]
+pub enum GoVariant {
+    Vanilla,
+    Infinite,
+    Ponder,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Go {
     search_moves: Option<Vec<chess::Movement>>,
 
     white_time: Option<u64>,
@@ -16,11 +23,13 @@ pub struct GoOptions {
     mate: Option<u8>,
 
     move_time: Option<u32>,
+
+    variant: GoVariant,
 }
 
-impl GoOptions {
-    fn empty() -> GoOptions {
-        GoOptions {
+impl Go {
+    fn empty() -> Self {
+        Go {
             search_moves: None,
 
             white_time: None,
@@ -34,32 +43,18 @@ impl GoOptions {
             mate: None,
 
             move_time: None,
+            variant: GoVariant::Vanilla,
         }
+    }
+
+    fn variant(v: GoVariant) -> Self {
+        let mut go = Self::empty();
+        go.variant = v;
+        go
     }
 }
 
-#[derive(Debug)]
-pub enum GoInstruction {
-    Ponder,
-    Infinite,
-}
-
-#[derive(Debug)]
-pub struct Go {
-    instruction: GoInstruction,
-    option: GoOptions,
-}
-
-impl Go {
-    fn new(instruction: GoInstruction) -> Go {
-        Go {
-            instruction,
-            option: GoOptions::empty(),
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum EngineMessage {
     UCI,
     Debug(bool),
@@ -132,12 +127,12 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
             _ => return None,
         },
         "go" => {
-            let mut go: Option<Go> = None;
+            let mut go = Go::empty();
 
             while let Some(word) = words.next() {
                 match word {
-                    "ponder" => go = Some(Go::new(GoInstruction::Ponder)),
-                    "infinite" => go = Some(Go::new(GoInstruction::Infinite)),
+                    "ponder" => go.variant = GoVariant::Ponder,
+                    "infinite" => go.variant = GoVariant::Infinite,
 
                     "searchmoves" => {
                         let mut moves = Vec::new();
@@ -145,33 +140,27 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
                             moves.push(chess::Movement::from_notation(word)?);
                         }
 
-                        go.as_mut()?.option.search_moves = Some(moves);
+                        go.search_moves = Some(moves);
                         break;
                     }
 
-                    "wtime" => go.as_mut()?.option.white_time = u64::from_str(words.next()?).ok(),
-                    "btime" => go.as_mut()?.option.black_time = u64::from_str(words.next()?).ok(),
-                    "winc" => {
-                        go.as_mut()?.option.white_increment = u32::from_str(words.next()?).ok()
-                    }
-                    "binc" => {
-                        go.as_mut()?.option.black_increment = u32::from_str(words.next()?).ok()
-                    }
-                    "movestogo" => {
-                        go.as_mut()?.option.moves_to_go = u8::from_str(words.next()?).ok()
-                    }
+                    "wtime" => go.white_time = u64::from_str(words.next()?).ok(),
+                    "btime" => go.black_time = u64::from_str(words.next()?).ok(),
+                    "winc" => go.white_increment = u32::from_str(words.next()?).ok(),
+                    "binc" => go.black_increment = u32::from_str(words.next()?).ok(),
+                    "movestogo" => go.moves_to_go = u8::from_str(words.next()?).ok(),
 
-                    "depth" => go.as_mut()?.option.depth = u8::from_str(words.next()?).ok(),
-                    "nodes" => go.as_mut()?.option.nodes = u64::from_str(words.next()?).ok(),
-                    "mate" => go.as_mut()?.option.mate = u8::from_str(words.next()?).ok(),
+                    "depth" => go.depth = u8::from_str(words.next()?).ok(),
+                    "nodes" => go.nodes = u64::from_str(words.next()?).ok(),
+                    "mate" => go.mate = u8::from_str(words.next()?).ok(),
 
-                    "movetime" => go.as_mut()?.option.move_time = u32::from_str(words.next()?).ok(),
+                    "movetime" => go.move_time = u32::from_str(words.next()?).ok(),
 
                     _ => (),
                 }
             }
 
-            EngineMessage::Go(go?)
+            EngineMessage::Go(go)
         }
 
         "stop" => EngineMessage::Stop,
@@ -182,4 +171,30 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
 
         _ => return None,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_go() {
+        assert_eq!(parse("go"), Some(EngineMessage::Go(Go::empty())));
+    }
+
+    #[test]
+    fn test_parse_go_infinite() {
+        assert_eq!(
+            parse("go infinite"),
+            Some(EngineMessage::Go(Go::variant(GoVariant::Infinite)))
+        );
+    }
+
+    #[test]
+    fn test_parse_go_ponder() {
+        assert_eq!(
+            parse("go ponder"),
+            Some(EngineMessage::Go(Go::variant(GoVariant::Ponder)))
+        );
+    }
 }

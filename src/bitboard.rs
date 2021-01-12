@@ -1,7 +1,7 @@
 use crate::chess::{Color, Square};
 use std::fmt;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BitBoard(pub u64);
 
 impl fmt::Display for BitBoard {
