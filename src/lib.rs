@@ -15,7 +15,10 @@ pub struct Engine {
 
 impl Engine {
     pub fn new() -> Engine {
-        Engine { position: None, best_move: None }
+        Engine {
+            position: None,
+            best_move: None,
+        }
     }
 
     pub fn uci_loop(&mut self) -> io::Result<()> {
@@ -53,7 +56,7 @@ impl Engine {
                     println!("bestmove {}", best_move.to_notation());
                     self.best_move = None;
                 }
-            },
+            }
 
             EngineMessage::Position(board, moves) => {
                 let mut board: Board = board.clone();
@@ -68,12 +71,12 @@ impl Engine {
                 if let Some(board) = &self.position {
                     let score = analyze::get_score(&board);
                     println!("info score cp {}", score);
-    
+
                     let moves = movegen::get_moves(&board);
                     let mut sorted_moves = Vec::new();
                     moves.iter().for_each(|m| sorted_moves.push(m));
                     sorted_moves.sort_by_key(|m| analyze::get_score(&board.make_move(m)));
-                    
+
                     let best_move = (*sorted_moves.get(0).unwrap()).clone();
                     println!("info pv {}", best_move.to_notation());
                     self.best_move = Some(best_move);

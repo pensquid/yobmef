@@ -1,4 +1,4 @@
-use crate::chess::Square;
+use crate::chess::{Color, Square};
 use std::fmt;
 
 #[derive(Debug, Clone, Copy)]
@@ -81,6 +81,20 @@ impl BitBoard {
         self.0 = ((self.0 >> 8) & K1) | ((self.0 & K1) << 8);
         self.0 = ((self.0 >> 16) & K2) | ((self.0 & K2) << 16);
         self.0 = (self.0 >> 32) | (self.0 << 32);
+    }
+
+    pub fn orient(&self, color: Color) -> BitBoard {
+        if color == Color::Black {
+            self.flip_vertical()
+        } else {
+            *self
+        }
+    }
+
+    pub fn orient_mut(&mut self, color: Color) {
+        if color == Color::Black {
+            self.flip_vertical_mut()
+        }
     }
 
     #[inline]

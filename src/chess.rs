@@ -71,6 +71,14 @@ impl Square {
     pub fn flip_vertical(&self) -> Square {
         Square::new(7 - self.rank(), self.file())
     }
+
+    pub fn orient(&self, color: Color) -> Square {
+        if color == Color::Black {
+            self.flip_vertical()
+        } else {
+            *self
+        }
+    }
 }
 
 // Calling it Movement and not Move because "move" is a keyword

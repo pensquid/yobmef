@@ -94,17 +94,17 @@ fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
     let all_pieces = board
         .color_combined(Color::White)
         .combine(&board.color_combined(Color::Black))
-        .flip_vertical();
+        .orient(board.side_to_move);
     let my_pawns = board
         .pieces(Piece::Pawn)
         .mask(&board.color_combined(board.side_to_move))
-        .flip_vertical();
+        .orient(board.side_to_move);
 
     let mut their_pieces = board
         .color_combined(board.side_to_move.other())
-        .flip_vertical();
+        .orient(board.side_to_move);
     if let Some(sq) = board.en_passant {
-        their_pieces.flip_mut(sq)
+        their_pieces.flip_mut(sq);
     }
 
     // Please have mercy uli I wrote this at midnight I'm tired
@@ -115,29 +115,29 @@ fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
             bitboard_to_squares(&valid_attacks).iter().for_each(|s| {
                 if s.rank() == 7 {
                     moves.push(Movement::new(
-                        from_square.flip_vertical(),
-                        s.flip_vertical(),
+                        from_square.orient(board.side_to_move),
+                        s.orient(board.side_to_move),
                         Some(Piece::Knight),
                     ));
                     moves.push(Movement::new(
-                        from_square.flip_vertical(),
-                        s.flip_vertical(),
+                        from_square.orient(board.side_to_move),
+                        s.orient(board.side_to_move),
                         Some(Piece::Bishop),
                     ));
                     moves.push(Movement::new(
-                        from_square.flip_vertical(),
-                        s.flip_vertical(),
+                        from_square.orient(board.side_to_move),
+                        s.orient(board.side_to_move),
                         Some(Piece::Rook),
                     ));
                     moves.push(Movement::new(
-                        from_square.flip_vertical(),
-                        s.flip_vertical(),
+                        from_square.orient(board.side_to_move),
+                        s.orient(board.side_to_move),
                         Some(Piece::Queen),
                     ));
                 } else {
                     moves.push(Movement::new(
-                        from_square.flip_vertical(),
-                        s.flip_vertical(),
+                        from_square.orient(board.side_to_move),
+                        s.orient(board.side_to_move),
                         None,
                     ));
                 }
@@ -145,39 +145,39 @@ fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
 
             if !all_pieces.get(from_square.up(1).unwrap()) {
                 moves.push(Movement::new(
-                    from_square.flip_vertical(),
-                    from_square.up(1).unwrap().flip_vertical(),
+                    from_square.orient(board.side_to_move),
+                    from_square.up(1).unwrap().orient(board.side_to_move),
                     None,
                 ));
 
-                if from_square.rank() < 6 && !all_pieces.get(from_square.up(2).unwrap()) {
+                if from_square.rank() == 1 && !all_pieces.get(from_square.up(2).unwrap()) {
                     let s = from_square.up(2).unwrap();
 
                     if s.rank() == 7 {
                         moves.push(Movement::new(
-                            from_square.flip_vertical(),
-                            s.flip_vertical(),
+                            from_square.orient(board.side_to_move),
+                            s.orient(board.side_to_move),
                             Some(Piece::Knight),
                         ));
                         moves.push(Movement::new(
-                            from_square.flip_vertical(),
-                            s.flip_vertical(),
+                            from_square.orient(board.side_to_move),
+                            s.orient(board.side_to_move),
                             Some(Piece::Bishop),
                         ));
                         moves.push(Movement::new(
-                            from_square.flip_vertical(),
-                            s.flip_vertical(),
+                            from_square.orient(board.side_to_move),
+                            s.orient(board.side_to_move),
                             Some(Piece::Rook),
                         ));
                         moves.push(Movement::new(
-                            from_square.flip_vertical(),
-                            s.flip_vertical(),
+                            from_square.orient(board.side_to_move),
+                            s.orient(board.side_to_move),
                             Some(Piece::Queen),
                         ));
                     } else {
                         moves.push(Movement::new(
-                            from_square.flip_vertical(),
-                            s.flip_vertical(),
+                            from_square.orient(board.side_to_move),
+                            s.orient(board.side_to_move),
                             None,
                         ));
                     }
