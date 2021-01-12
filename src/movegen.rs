@@ -177,7 +177,6 @@ mod tests {
         Movement::from_notation(lan).unwrap()
     }
 
-    // TODO: pretty-print board on error
     fn moves_test(board: &Board, legal: &str, illegal: &str) {
         let moves = get_moves(&board);
 
