@@ -6,6 +6,21 @@ pub struct BitBoard(pub u64);
 
 impl fmt::Display for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // for n in 0..64 {
+        //     if n % 8 != 0 {
+        //         write!(f, " ")?;
+        //     }
+
+        //     let s = if self.get(Square(n)) { "1" } else { "0" };
+        //     write!(f, "{}", s)?;
+
+        //     if n % 8 == 7 {
+        //         write!(f, "\n")?;
+        //     }
+        // }
+
+        // write!(f, "")
+
         // Go by rank, printing each row
         for rank_index in 0..8 {
             let rank_index = 7 - rank_index;
