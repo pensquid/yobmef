@@ -182,17 +182,17 @@ mod tests {
         let moves = get_moves(&board);
 
         for lan in legal.split(' ') {
-            assert!(
-                moves.contains(&mv(lan)),
-                format!("{} should be legal, but it isn't", lan),
-            );
+            if !moves.contains(&mv(lan)) {
+                eprintln!("{}", board);
+                panic!("{} should be legal", lan);
+            }
         }
 
         for lan in illegal.split(' ') {
-            assert!(
-                !moves.contains(&mv(lan)),
-                format!("{} should not be legal, but it is", lan),
-            );
+            if moves.contains(&mv(lan)) {
+                eprintln!("{}", board);
+                panic!("{} should be illegal", lan);
+            }
         }
     }
 

@@ -14,7 +14,7 @@ impl Square {
         Square((rank * 8) + file)
     }
 
-    pub fn from_notation(rank: char, file: char) -> Option<Square> {
+    pub fn from_notation(file: char, rank: char) -> Option<Square> {
         let rank = rank as u8;
         let file = file as u8;
 
@@ -27,9 +27,8 @@ impl Square {
 
         let rank_index = rank - b'1';
         let file_index = file - b'a';
-        let square = (rank_index * 8) + file_index;
 
-        Some(Square(square))
+        Some(Square::new(rank_index, file_index))
     }
 
     pub fn to_notation(&self) -> (char, char) {
@@ -105,11 +104,11 @@ impl Movement {
 
         let from_file = lan.next()?;
         let from_rank = lan.next()?;
-        let from_square = Square::from_notation(from_rank, from_file)?;
+        let from_square = Square::from_notation(from_file, from_rank)?;
 
         let to_file = lan.next()?;
         let to_rank = lan.next()?;
-        let to_square = Square::from_notation(to_rank, to_file)?;
+        let to_square = Square::from_notation(to_file, to_rank)?;
 
         let mut promote = None;
         if let Some(ch) = lan.next() {
@@ -236,26 +235,24 @@ pub struct Board {
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut board = [[' '; 8]; 8];
-
+        // Go by rank, printing each row.
         for rank_index in 0..8 {
+            let rank_index = 7 - rank_index;
             for file_index in 0..8 {
                 let square = Square::new(rank_index, file_index);
 
-                if self.color_combined[Color::White as usize].get(square) {
-                    board[7 - (rank_index as usize)][file_index as usize] = 'w';
-                } else if self.color_combined[Color::Black as usize].get(square) {
-                    board[7 - (rank_index as usize)][file_index as usize] = 'b';
-                }
+                let character = match self.piece_on(square) {
+                    Some(piece) => piece.as_char_color(self.color_on(square).unwrap()),
+                    None => '.',
+                };
+
+                // TODO: No space at end of line
+                write!(f, "{} ", character)?;
             }
+            write!(f, "\n")?;
         }
 
-        let s = board
-            .iter()
-            .map(|row| row.iter().collect::<String>())
-            .collect::<Vec<String>>()
-            .join("\n");
-        write!(f, "{}", s)
+        write!(f, "")
     }
 }
 
@@ -267,6 +264,25 @@ impl Board {
             en_passant: None,
             castling: 0b1111,
             side_to_move: Color::White,
+        }
+    }
+
+    pub fn piece_on(&self, square: Square) -> Option<Piece> {
+        for piece in 0..6 {
+            if self.pieces[piece].get(square) {
+                return Some(Piece::from_usize(piece).unwrap());
+            }
+        }
+        return None;
+    }
+
+    pub fn color_on(&self, square: Square) -> Option<Color> {
+        if self.color_combined(Color::White).get(square) {
+            Some(Color::White)
+        } else if self.color_combined(Color::Black).get(square) {
+            Some(Color::Black)
+        } else {
+            None
         }
     }
 
@@ -322,7 +338,7 @@ impl Board {
 
         let en_passant = fen_split.next()?.as_bytes();
         if en_passant.len() == 2 {
-            board.en_passant = Square::from_notation(en_passant[1] as char, en_passant[0] as char);
+            board.en_passant = Square::from_notation(en_passant[0] as char, en_passant[1] as char);
         }
 
         Some(board)
@@ -354,10 +370,7 @@ impl Board {
     }
 
     pub fn make_move_mut(&mut self, movement: &Movement) -> Option<()> {
-        // Find the color
-        // Who needs to handle edge cases anyways
-        let is_white = self.color_combined(Color::White).get(movement.from_square);
-        let color = if is_white { Color::White } else { Color::Black };
+        let color = self.color_on(movement.from_square).unwrap();
 
         if self.color_combined(color).get(movement.to_square) {
             return None;
@@ -416,6 +429,30 @@ impl Board {
 mod tests {
     use super::*;
 
+    fn sq(file: char, rank: char) -> Square {
+        Square::from_notation(file, rank).unwrap()
+    }
+
+    #[test]
+    fn test_color_on() {
+        let b = Board::from_start_pos();
+        assert_eq!(b.color_on(sq('e', '2')), Some(Color::White));
+        assert_eq!(b.color_on(sq('e', '7')), Some(Color::Black));
+        assert_eq!(b.color_on(sq('d', '8')), Some(Color::Black));
+        assert_eq!(b.color_on(sq('e', '3')), None);
+    }
+
+    #[test]
+    fn test_piece_on() {
+        let b = Board::from_start_pos();
+        assert_eq!(b.piece_on(sq('e', '2')), Some(Piece::Pawn));
+        assert_eq!(b.piece_on(sq('e', '7')), Some(Piece::Pawn));
+        assert_eq!(b.piece_on(sq('d', '8')), Some(Piece::Queen));
+        assert_eq!(b.piece_on(sq('a', '8')), Some(Piece::Rook));
+        assert_eq!(b.piece_on(sq('a', '1')), Some(Piece::Rook));
+        assert_eq!(b.piece_on(sq('e', '3')), None);
+    }
+
     #[test]
     fn test_from_fen_starting() {
         let b = Board::from_start_pos();
@@ -450,6 +487,19 @@ mod tests {
         assert_eq!(b.side_to_move, Color::Black);
 
         assert!(b.pieces(Piece::Pawn).get(Square::new(3, 4)));
+    }
+
+    #[test]
+    fn test_fen_endgame() {
+        let b =
+            Board::from_fen("8/3k1p2/1R1p2P1/8/2P1N3/2Q1K3/8/8 w - - 0 1").expect("fen is valid");
+
+        assert_eq!(b.en_passant, None);
+        assert_eq!(b.castling, 0b0000);
+        assert_eq!(b.side_to_move, Color::White);
+
+        assert_eq!(b.piece_on(sq('e', '3')), Some(Piece::King));
+        assert_eq!(b.piece_on(sq('f', '7')), Some(Piece::Pawn));
     }
 
     #[test]
