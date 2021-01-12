@@ -32,6 +32,10 @@ impl Square {
         Some(Square(square))
     }
 
+    pub fn to_notation(&self) -> (char, char) {
+        ((self.rank() + b'1') as char, (self.file() + b'a') as char)
+    }
+
     pub fn rank(&self) -> u8 {
         self.0 / 8
     }
@@ -70,7 +74,7 @@ impl Square {
 }
 
 // Calling it Movement and not Move because "move" is a keyword
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Movement {
     from_square: Square,
     to_square: Square,
@@ -109,6 +113,23 @@ impl Movement {
             to_square,
             promote,
         })
+    }
+
+    pub fn to_notation(&self) -> String {
+        let from_notation = self.from_square.to_notation();
+        let to_notation = self.to_square.to_notation();
+
+        let mut lan = String::new();
+        lan.push(from_notation.1);
+        lan.push(from_notation.0);
+        lan.push(to_notation.1);
+        lan.push(to_notation.0);
+
+        if let Some(piece) = self.promote {
+            lan.push(piece.as_char());
+        }
+
+        lan
     }
 }
 
@@ -213,9 +234,9 @@ impl fmt::Display for Board {
             for file_index in 0..8 {
                 let square = Square::new(rank_index, file_index);
 
-                if self.color_combined(Color::White).get(square) {
+                if self.color_combined[Color::White as usize].get(square) {
                     board[7 - (rank_index as usize)][file_index as usize] = 'w';
-                } else if self.color_combined(Color::Black).get(square) {
+                } else if self.color_combined[Color::Black as usize].get(square) {
                     board[7 - (rank_index as usize)][file_index as usize] = 'b';
                 }
             }
@@ -241,12 +262,12 @@ impl Board {
         }
     }
 
-    pub fn pieces(&self, piece: Piece) -> BitBoard {
-        self.pieces[piece as usize]
+    pub fn pieces(&self, piece: Piece) -> &BitBoard {
+        &self.pieces[piece as usize]
     }
 
-    pub fn color_combined(&self, color: Color) -> BitBoard {
-        self.color_combined[color as usize]
+    pub fn color_combined(&self, color: Color) -> &BitBoard {
+        &self.color_combined[color as usize]
     }
 
     pub fn from_fen(s: &str) -> Option<Board> {
@@ -272,8 +293,8 @@ impl Board {
                     };
                     let square = Square::new(rank_index, file_index);
 
-                    board.pieces(piece).flip_mut(square);
-                    board.color_combined(color).flip_mut(square);
+                    board.pieces[piece as usize].flip_mut(square);
+                    board.color_combined[color as usize].flip_mut(square);
                     file_index += 1;
                 }
             }
@@ -318,13 +339,13 @@ impl Board {
         }
     }
 
-    pub fn make_move(&self, movement: Movement) -> Board {
+    pub fn make_move(&self, movement: &Movement) -> Board {
         let mut board = self.clone();
-        board.make_move_mut(movement);
+        board.make_move_mut(&movement);
         board
     }
 
-    pub fn make_move_mut(&mut self, movement: Movement) -> Option<()> {
+    pub fn make_move_mut(&mut self, movement: &Movement) -> Option<()> {
         // Find the color
         // Who needs to handle edge cases anyways
         let is_white = self.color_combined(Color::White).get(movement.from_square);
@@ -346,17 +367,17 @@ impl Board {
             if !promoted_piece.can_promote_to() {
                 return None;
             }
-            self.pieces(promoted_piece).flip_mut(movement.to_square);
+            self.pieces[promoted_piece as usize].flip_mut(movement.to_square);
         } else {
-            self.pieces(piece).flip_mut(movement.to_square);
+            self.pieces[piece as usize].flip_mut(movement.to_square);
         }
 
         // Remove the piece
-        self.pieces(piece).flip_mut(movement.from_square);
+        self.pieces[piece as usize].flip_mut(movement.from_square);
 
         // Move the piece in the color grid
-        self.color_combined(color).flip_mut(movement.from_square);
-        self.color_combined(color).flip_mut(movement.to_square);
+        self.color_combined[color as usize].flip_mut(movement.from_square);
+        self.color_combined[color as usize].flip_mut(movement.to_square);
 
         // Store en passant passing square
         let is_double_move = if color == Color::White {
@@ -436,7 +457,7 @@ mod tests {
         assert_eq!(b.castling, 0b1111);
         assert_eq!(b.side_to_move, Color::White);
 
-        b.make_move_mut(Movement::from_notation("e2e4").expect("movement is valid"));
+        b.make_move_mut(&Movement::from_notation("e2e4").expect("movement is valid"));
 
         // Just moved a pawn forward 2, so en_passant
         assert_eq!(b.en_passant, Some(Square::new(2, 4)));
@@ -452,7 +473,7 @@ mod tests {
         let mut b = Board::from_fen("1nbqkbnr/rP1ppppp/p1p5/8/8/8/1PPPPPPP/RNBQKBNR w KQk - 1 5")
             .expect("before promotion fen is valid");
 
-        b.make_move_mut(Movement::from_notation("b7c8q").expect("movement is valid"));
+        b.make_move_mut(&Movement::from_notation("b7c8q").expect("movement is valid"));
 
         let b7 = Square::new(6, 1);
         let c8 = Square::new(7, 2);

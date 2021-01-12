@@ -79,8 +79,8 @@ fn get_score_for_color(board: &Board, color: Color) -> i16 {
     score
 }
 
-pub fn get_score(board: Board) -> i16 {
-    get_score_for_color(&board, Color::White) - get_score_for_color(&board, Color::Black)
+pub fn get_score(board: &Board) -> i16 {
+    get_score_for_color(board, Color::White) - get_score_for_color(&board, Color::Black)
 }
 
 #[cfg(test)]
@@ -91,9 +91,9 @@ mod tests {
     #[test]
     fn test_get_score_e2e4() {
         let mut b = Board::from_start_pos();
-        b.make_move_mut(Movement::from_notation("e2e4").expect("e2e4 move is valid"));
+        b.make_move_mut(&Movement::from_notation("e2e4").expect("e2e4 move is valid"));
 
-        let score = get_score(b);
+        let score = get_score(&b);
         eprintln!("score: {}", score);
         assert!(score > 0); // White should have the advantage
     }

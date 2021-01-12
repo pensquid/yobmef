@@ -90,7 +90,7 @@ fn bitboard_to_squares(bitboard: &BitBoard) -> Vec<Square> {
         .collect::<Vec<Square>>()
 }
 
-pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
+fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
     let all_pieces = board
         .color_combined(Color::White)
         .combine(&board.color_combined(Color::Black))
