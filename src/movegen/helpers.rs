@@ -4,6 +4,9 @@ use crate::{
     chess::{Board, Movement, Square},
 };
 
+pub const NOT_A_FILE: u64 = 0xfefefefefefefefe; // ~0x0101010101010101
+pub const NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f; // ~0x8080808080808080
+
 #[allow(dead_code)]
 pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
     gen_moves();
