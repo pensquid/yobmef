@@ -4,24 +4,21 @@ use crate::movegen::helpers::bitboard_to_squares;
 
 static mut PAWN_ATTACKS: [BitBoard; 64] = [BitBoard::empty(); 64];
 
+// obviously
+const NOT_A_FILE: u64 = 0xfefefefefefefefe; // ~0x0101010101010101
+const NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f; // ~0x8080808080808080
+
 fn pawn_attacks(square: Square) -> BitBoard {
     unsafe { PAWN_ATTACKS[square.0 as usize] }
 }
 
 pub fn gen_pawn_moves() {
     for from_square_index in 0..64 {
-        let from_square = Square(from_square_index);
-        let mut pawn_attacks = BitBoard::empty();
-
-        // Attacks
-        from_square
-            .up(1)
-            .and_then(|s| s.left(1))
-            .map(|s| pawn_attacks.flip_mut(s));
-        from_square
-            .up(1)
-            .and_then(|s| s.right(1))
-            .map(|s| pawn_attacks.flip_mut(s));
+        let only_square = 1 << from_square_index;
+        let pawn_attacks = BitBoard(
+            // even a fucking gradeschooler would then know
+            ((only_square << 9) & NOT_A_FILE) | ((only_square << 7) & NOT_H_FILE),
+        );
 
         unsafe {
             PAWN_ATTACKS[from_square_index as usize] = pawn_attacks;
@@ -100,6 +97,12 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
 mod tests {
     use super::*;
     use crate::movegen::helpers::moves_test;
+
+    #[test]
+    fn test_take_pawn_h_file() {
+        let mut board = Board::from_fen("8/8/7p/6P1/8/k7/8/K7 w - - 0 1").unwrap();
+        moves_test(&board, "g5h6", "");
+    }
 
     #[test]
     fn test_get_pawn_moves_startpos() {

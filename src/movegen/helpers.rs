@@ -16,10 +16,12 @@ pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
         }
     }
 
-    for lan in illegal.split(' ') {
-        if moves.contains(&Movement::from_notation(lan).unwrap()) {
-            eprintln!("{}", board);
-            panic!("{} should be illegal", lan);
+    if illegal != "" {
+        for lan in illegal.split(' ') {
+            if moves.contains(&Movement::from_notation(lan).unwrap()) {
+                eprintln!("{}", board);
+                panic!("{} should be illegal", lan);
+            }
         }
     }
 }
