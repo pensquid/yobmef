@@ -102,13 +102,8 @@ impl Movement {
         // TODO: Write tests
         let mut lan = lan.chars();
 
-        let from_file = lan.next()?;
-        let from_rank = lan.next()?;
-        let from_square = Square::from_notation(from_file, from_rank)?;
-
-        let to_file = lan.next()?;
-        let to_rank = lan.next()?;
-        let to_square = Square::from_notation(to_file, to_rank)?;
+        let from_square = Square::from_notation(lan.next()?, lan.next()?)?;
+        let to_square = Square::from_notation(lan.next()?, lan.next()?)?;
 
         let mut promote = None;
         if let Some(ch) = lan.next() {

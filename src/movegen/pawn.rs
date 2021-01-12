@@ -86,6 +86,12 @@ mod tests {
     }
 
     #[test]
+    fn test_take_own_pawn() {
+        let board = Board::from_fen("8/8/5P1p/6P1/8/k7/8/K7 w - - 0 1").unwrap();
+        moves_test(&board, "g5h6", "g5f6");
+    }
+
+    #[test]
     fn test_take_pawn_a_file() {
         let mut board = Board::from_fen("8/8/p7/1P6/8/k7/8/K7 w - - 0 1").unwrap();
         moves_test(&board, "b5a6", "a6b5");
