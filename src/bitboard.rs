@@ -136,27 +136,6 @@ mod tests {
     }
 
     #[test]
-    fn test_bitboard_display() {
-        let mut b = BitBoard::empty();
-        b.flip_mut(Square(0));
-        b.flip_mut(Square(7));
-        b.flip_mut(Square(63));
-        assert_eq!(
-            format!("{}", b),
-            "\
-      1 0 0 0 0 0 0 1\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 1\n\
-    "
-        );
-    }
-
-    #[test]
     fn test_flip_vertical() {
         let mut b = BitBoard::empty();
 
