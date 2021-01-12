@@ -101,7 +101,7 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
                     let word = words.next();
                     match word {
                         Some("moves") => break,
-                        None => return None,
+                        None => return Some(EngineMessage::Position(chess::Board::from_start_pos(), Vec::new())),
                         _ => continue,
                     }
                 }
@@ -116,7 +116,7 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
                     match word {
                         Some("moves") => break,
                         Some(chunk) => fen.push(chunk),
-                        None => return None,
+                        None => return Some(EngineMessage::Position(chess::Board::from_start_pos(), Vec::new())),
                     }
                 }
                 let fen = fen.join(" ");
