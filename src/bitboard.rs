@@ -6,20 +6,19 @@ pub struct BitBoard(pub u64);
 
 impl fmt::Display for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for n in 0..64 {
-            if n % 8 != 0 {
-                write!(f, " ")?;
-            }
+        // Go by rank, printing each row
+        for rank_index in 0..8 {
+            let rank_index = 7 - rank_index;
+            write!(f, "{}", rank_index + 1)?;
 
-            let s = if self.get(Square(n)) { "1" } else { "0" };
-            write!(f, "{}", s)?;
-
-            if n % 8 == 7 {
-                write!(f, "\n")?;
+            for file_index in 0..8 {
+                let square = Square::new(rank_index, file_index);
+                write!(f, " {}", if self.get(square) { 'X' } else { '.' })?;
             }
+            write!(f, "\n")?;
         }
 
-        write!(f, "")
+        write!(f, "  a b c d e f g h")
     }
 }
 
@@ -134,27 +133,6 @@ mod tests {
         let mut b = BitBoard::empty();
         b.0 |= 0b1111;
         assert_eq!(b.population(), 4);
-    }
-
-    #[test]
-    fn test_bitboard_display() {
-        let mut b = BitBoard::empty();
-        b.flip_mut(Square(0));
-        b.flip_mut(Square(7));
-        b.flip_mut(Square(63));
-        assert_eq!(
-            format!("{}", b),
-            "\
-      1 0 0 0 0 0 0 1\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 0\n\
-      0 0 0 0 0 0 0 1\n\
-    "
-        );
     }
 
     #[test]
