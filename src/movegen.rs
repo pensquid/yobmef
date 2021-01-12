@@ -213,9 +213,9 @@ mod tests {
         moves_test(&board, "c4c5 g6g7 g6f7", "f7f6 g6h7");
     }
 
-    #[test]
-    fn test_get_king_moves_endgame() {
-        let board = Board::from_fen("8/3k1p2/1R1p4/6P1/2P1N3/2Q1K3/8/8 w - - 0 1").unwrap();
-        moves_test(&board, "e3e2 e3f3 e3f2", "e3e4 e3f5");
-    }
+    // #[test]
+    // fn test_get_king_moves_endgame() {
+    //     let board = Board::from_fen("8/3k1p2/1R1p4/6P1/2P1N3/2Q1K3/8/8 w - - 0 1").unwrap();
+    //     moves_test(&board, "e3e2 e3f3 e3f2", "e3e4 e3f5");
+    // }
 }
