@@ -92,7 +92,7 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
         // Double pushes
         let mut dbl_pushes = pawn_dbl_pushes(from_square, board.side_to_move).clone();
         dbl_pushes &= all_pieces;
-        dbl_pushes |= if board.side_to_move == Color::White {
+        dbl_pushes &= if board.side_to_move == Color::White {
             BitBoard(all_pieces.0 << 8)
         } else {
             BitBoard(all_pieces.0 >> 8)
