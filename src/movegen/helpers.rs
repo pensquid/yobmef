@@ -14,7 +14,9 @@ pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
         .map(|mv| mv.to_notation())
         .collect::<Vec<String>>()
         .join(", ");
-    if legal_str == "" { legal_str = "<none>".to_string(); }
+    if legal_str == "" {
+        legal_str = "<none>".to_string();
+    }
 
     eprintln!("{}", board);
     for lan in legal.split(' ') {

@@ -20,6 +20,7 @@ fn pawn_dbl_pushes(square: Square, color: Color) -> BitBoard {
 
 pub fn gen_pawn_moves() {
     for from_square_index in 0..48 {
+        let square = Square(from_square_index + 8);
         let only_square = 1 << (from_square_index + 8);
 
         // Even a fucking gradeschooler would then know
@@ -30,20 +31,19 @@ pub fn gen_pawn_moves() {
 
         let white_pawn_pushes = BitBoard(only_square << 8);
         let black_pawn_pushes = BitBoard(only_square >> 8);
-        
-        if Square(from_square_index).rank() == 1 {
+        if square.rank() == 1 {
             let white_dbl_pawn_pushes = BitBoard(only_square << 16);
             unsafe {
                 PAWN_DBL_PUSHES[Color::White as usize][from_square_index as usize] =
-                white_dbl_pawn_pushes;
+                    white_dbl_pawn_pushes;
             }
         }
 
-        if Square(from_square_index).rank() == 6 {
+        if square.rank() == 6 {
             let black_dbl_pawn_pushes = BitBoard(only_square >> 16);
             unsafe {
                 PAWN_DBL_PUSHES[Color::Black as usize][from_square_index as usize] =
-                black_dbl_pawn_pushes;
+                    black_dbl_pawn_pushes;
             }
         }
 
@@ -57,7 +57,10 @@ pub fn gen_pawn_moves() {
 }
 
 pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
-    let all_pieces = board.color_combined_both();
+    // we're so fucking dumb kognise
+    // we need bitwise not because we want the mask to cancel when
+    // a piece *IS* there, not when it isen't
+    let all_pieces = board.color_combined_both().not();
     let my_pawns = board
         .pieces(Piece::Pawn)
         .mask(&board.color_combined(board.side_to_move));
@@ -69,7 +72,9 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
 
     for from_square_index in 0..48 {
         let from_square = Square(from_square_index + 8);
-        if !my_pawns.get(from_square) { continue; }
+        if !my_pawns.get(from_square) {
+            continue;
+        }
 
         let mut moves_bitboard = BitBoard::empty();
 
@@ -93,12 +98,13 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
             }),
         );
         moves_bitboard.merge_mut(&dbl_pushes);
-        eprintln!("dbl pushes\n{}", dbl_pushes);
 
         // Add all the moves
         for to_square_index in 0..48 {
             let to_square = Square(to_square_index + 8);
-            if !moves_bitboard.get(to_square) { continue; }
+            if !moves_bitboard.get(to_square) {
+                continue;
+            }
             moves.push(Movement::new(from_square, to_square, None));
         }
     }
