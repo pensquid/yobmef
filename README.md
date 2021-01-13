@@ -15,7 +15,10 @@ A chess engine in rust
     - [x] Promotions
     - [x] En passant
   - [ ] Kings
-  - [ ] Knights
+    - [x] Moves
+    - [ ] Cannot move into check
+  - [ ] If in check, you must get out of check
+  - [x] Knights
   - [ ] Rooks
   - [ ] Bishops
   - [ ] Queens
