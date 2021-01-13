@@ -24,16 +24,6 @@ impl fmt::Display for BitBoard {
 
 impl BitBoard {
     #[inline]
-    pub fn not(&self) -> BitBoard {
-        BitBoard(!self.0)
-    }
-
-    #[inline]
-    pub fn sum(&self) -> u8 {
-        (0..64).map(|sq| self.get(Square(sq)) as u8).sum()
-    }
-
-    #[inline]
     pub const fn empty() -> Self {
         Self(0)
     }
@@ -51,26 +41,6 @@ impl BitBoard {
     #[inline]
     pub fn flip_mut(&mut self, sq: Square) {
         self.0 ^= 1 << sq.0;
-    }
-
-    #[inline]
-    pub fn mask(&self, mask: &BitBoard) -> BitBoard {
-        BitBoard(self.0 & mask.0)
-    }
-
-    #[inline]
-    pub fn mask_mut(&mut self, mask: &BitBoard) {
-        self.0 &= mask.0;
-    }
-
-    #[inline]
-    pub fn merge(&self, with: &BitBoard) -> BitBoard {
-        BitBoard(self.0 | with.0)
-    }
-
-    #[inline]
-    pub fn merge_mut(&mut self, with: &BitBoard) {
-        self.0 |= with.0;
     }
 
     pub fn flip_vertical(&self) -> BitBoard {
@@ -114,9 +84,56 @@ impl BitBoard {
     }
 }
 
+macro_rules! impl_op {
+    ($op:ident, $fun:ident) => {
+        use std::ops::$op;
+        impl $op for BitBoard {
+            type Output = Self;
+
+            fn $fun(self, other: Self) -> Self::Output {
+                BitBoard(self.0.$fun(other.0))
+            }
+        }
+    };
+}
+
+macro_rules! impl_op_assign {
+    ($op:ident, $fun:ident) => {
+        use std::ops::$op;
+        impl $op for BitBoard {
+            fn $fun(&mut self, rhs: Self) {
+                self.0.$fun(rhs.0);
+            }
+        }
+    };
+}
+
+impl_op!(BitOr, bitor);
+impl_op_assign!(BitOrAssign, bitor_assign);
+
+impl_op!(BitXor, bitxor);
+impl_op_assign!(BitXorAssign, bitxor_assign);
+
+impl_op!(BitAnd, bitand);
+impl_op_assign!(BitAndAssign, bitand_assign);
+
+impl_op!(Shl, shl);
+impl_op_assign!(ShlAssign, shl_assign);
+
+impl_op!(Shr, shr);
+impl_op_assign!(ShrAssign, shr_assign);
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_bitboard_or() {
+        let mut b = BitBoard(1);
+        assert_eq!(b | BitBoard(2), BitBoard(3));
+        b |= BitBoard(2);
+        assert_eq!(b, BitBoard(3));
+    }
 
     #[test]
     fn test_bitboard_get_flip() {
