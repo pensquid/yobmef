@@ -20,9 +20,9 @@ pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
         legal_str = "<none>".to_string();
     }
 
-    eprintln!("{}", board);
     for lan in legal.split(' ') {
         if !moves.contains(&Movement::from_notation(lan).unwrap()) {
+            eprintln!("{}", board);
             panic!("{} should be legal, legal moves: {}", lan, legal_str);
         }
     }
@@ -30,6 +30,7 @@ pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
     if illegal != "" {
         for lan in illegal.split(' ') {
             if moves.contains(&Movement::from_notation(lan).unwrap()) {
+                eprintln!("{}", board);
                 panic!("{} should be illegal, legal moves: {}", lan, legal_str);
             }
         }

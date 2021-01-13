@@ -1,5 +1,5 @@
-use crate::chess::{Board, Color, Movement, Piece, Square};
 use crate::bitboard::BitBoard;
+use crate::chess::{Board, Color, Movement, Piece, Square};
 
 use super::helpers::{NOT_A_FILE, NOT_H_FILE};
 
@@ -170,7 +170,11 @@ mod tests {
     #[test]
     fn test_white_pawn_promote() {
         let board = Board::from_fen("4r1b1/5P2/8/8/8/k7/8/K7 w - - 0 1").unwrap();
-        moves_test(&board, "f7e8q f7e8r f7f8q f7f8r f7g8q f7g8r", "f7g8k f7f8k f7f8p");
+        moves_test(
+            &board,
+            "f7e8q f7e8r f7f8q f7f8r f7g8q f7g8r",
+            "f7g8k f7f8k f7f8p",
+        );
     }
 
     #[test]
@@ -186,5 +190,17 @@ mod tests {
                 .unwrap();
 
         moves_test(&board, "e5f6 e5e6", "e5d6");
+    }
+
+    #[test]
+    fn test_en_passant_capture() {
+        let mut board = Board::from_fen("k1K5/8/8/8/3PPp2/8/8/8 b - e3 0 1").unwrap();
+        moves_test(&board, "f4e3 f4f3", "d4d5");
+
+        board
+            .make_move_mut(&Movement::from_notation("f4e3").unwrap())
+            .unwrap();
+        board.assert_valid();
+        moves_test(&board, "d4d5", "e4e5");
     }
 }

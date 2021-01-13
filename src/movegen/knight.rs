@@ -1,6 +1,6 @@
-use crate::chess::{Board, Movement, Square, Piece};
-use crate::bitboard::BitBoard;
 use super::helpers::{NOT_AB_FILE, NOT_A_FILE, NOT_GH_FILE, NOT_H_FILE};
+use crate::bitboard::BitBoard;
+use crate::chess::{Board, Movement, Piece, Square};
 
 static mut KNIGHT_MOVES: [BitBoard; 64] = [BitBoard::empty(); 64];
 
@@ -35,12 +35,16 @@ pub fn get_knight_moves(board: &Board, moves: &mut Vec<Movement>) {
 
     for from_square_index in 0..64 {
         let from_square = Square(from_square_index);
-        if !my_knights.get(from_square) { continue; }
+        if !my_knights.get(from_square) {
+            continue;
+        }
         let moves_bitboard = knight_moves(from_square).mask(&move_locations);
 
         for to_square_index in 0..64 {
             let to_square = Square(to_square_index);
-            if !moves_bitboard.get(to_square) { continue; }
+            if !moves_bitboard.get(to_square) {
+                continue;
+            }
 
             moves.push(Movement::new(from_square, to_square, None));
         }
@@ -65,7 +69,7 @@ mod tests {
 
     #[test]
     fn test_get_knight_moves_other_directions() {
-        let mut board = Board::from_fen("b6k/7K/8/2N5/4n3/8/8/4B3 w - - 0 1").expect("fen is valid");
+        let mut board = Board::from_fen("b6k/7K/8/2N5/4n3/8/8/4B3 w - - 0 1").unwrap();
 
         moves_test(&board, "c5b7 c5a6 c5a4 c5b3 c5d3 c5e4 c5e6 c5d7", "");
 
@@ -75,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_get_knight_moves_edges() {
-        let board = Board::from_fen("8/8/2k3K1/8/8/8/N6N/8 w - - 0 1").expect("fen is valid");
+        let board = Board::from_fen("8/8/2k3K1/8/8/8/N6N/8 w - - 0 1").unwrap();
         moves_test(&board, "h2g4 a2c3", "h2g8 h2a4 a2g3");
     }
 }

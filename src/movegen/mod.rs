@@ -1,8 +1,8 @@
 use crate::chess::{Board, Movement};
 
 mod helpers;
-mod pawn;
 mod knight;
+mod pawn;
 
 pub fn gen_moves() {
     pawn::gen_pawn_moves();

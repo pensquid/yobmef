@@ -534,8 +534,7 @@ mod tests {
 
     #[test]
     fn test_fen_endgame() {
-        let b =
-            Board::from_fen("8/3k1p2/1R1p2P1/8/2P1N3/2Q1K3/8/8 w - - 0 1").expect("fen is valid");
+        let b = Board::from_fen("8/3k1p2/1R1p2P1/8/2P1N3/2Q1K3/8/8 w - - 0 1").unwrap();
 
         assert_eq!(b.en_passant, None);
         assert_eq!(b.castling, 0b0000);
@@ -589,7 +588,7 @@ mod tests {
     #[test]
     fn test_make_move_capture() {
         let mut b = Board::from_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2")
-            .expect("fen is valid");
+            .unwrap();
         eprintln!("{}", b);
 
         let movement = &Movement::from_notation("e4d5").unwrap();
@@ -602,8 +601,8 @@ mod tests {
 
     #[test]
     fn test_valid_after_capture() {
-        let mut b = Board::from_fen("rnbqkbnr/ppp2ppp/8/3P4/8/2Np4/PP2PPPP/R1BQKBNR w KQkq - 0 1")
-            .expect("fen is valid");
+        let mut b =
+            Board::from_fen("rnbqkbnr/ppp2ppp/8/3P4/8/2Np4/PP2PPPP/R1BQKBNR w KQkq - 0 1").unwrap();
 
         let movement = &Movement::from_notation("e2d3").unwrap();
         b.make_move_mut(movement).unwrap();
