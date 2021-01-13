@@ -23,7 +23,6 @@ pub fn get_moves(board: &Board) -> Vec<Movement> {
 mod tests {
     use super::helpers::*;
     use super::*;
-    use crate::analyze;
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
 
