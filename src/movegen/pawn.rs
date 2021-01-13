@@ -1,12 +1,12 @@
 use crate::chess::{Board, Color, Movement, Piece, Square};
-use crate::{bitboard::BitBoard, chess::NUM_PIECES};
+use crate::bitboard::BitBoard;
 
 use super::helpers::{NOT_A_FILE, NOT_H_FILE};
 
 // 48 because we don't need the top or bottom rows for pawns
-static mut PAWN_ATTACKS: [[BitBoard; 48]; NUM_PIECES] = [[BitBoard::empty(); 48]; NUM_PIECES];
-static mut PAWN_PUSHES: [[BitBoard; 48]; NUM_PIECES] = [[BitBoard::empty(); 48]; NUM_PIECES];
-static mut PAWN_DBL_PUSHES: [[BitBoard; 48]; NUM_PIECES] = [[BitBoard::empty(); 48]; NUM_PIECES];
+static mut PAWN_ATTACKS: [[BitBoard; 48]; 64] = [[BitBoard::empty(); 48]; 64];
+static mut PAWN_PUSHES: [[BitBoard; 48]; 64] = [[BitBoard::empty(); 48]; 64];
+static mut PAWN_DBL_PUSHES: [[BitBoard; 48]; 64] = [[BitBoard::empty(); 48]; 64];
 
 fn pawn_attacks(square: Square, color: Color) -> BitBoard {
     unsafe { PAWN_ATTACKS[color as usize][(square.0 - 8) as usize] }
@@ -20,7 +20,7 @@ fn pawn_dbl_pushes(square: Square, color: Color) -> BitBoard {
 
 pub fn gen_pawn_moves() {
     for from_square_index in 0..48 {
-        let square = Square(from_square_index + 8);
+        let from_square = Square(from_square_index + 8);
         let only_square = 1 << (from_square_index + 8);
 
         // Even a fucking gradeschooler would then know
@@ -31,7 +31,7 @@ pub fn gen_pawn_moves() {
 
         let white_pawn_pushes = BitBoard(only_square << 8);
         let black_pawn_pushes = BitBoard(only_square >> 8);
-        if square.rank() == 1 {
+        if from_square.rank() == 1 {
             let white_dbl_pawn_pushes = BitBoard(only_square << 16);
             unsafe {
                 PAWN_DBL_PUSHES[Color::White as usize][from_square_index as usize] =
@@ -39,7 +39,7 @@ pub fn gen_pawn_moves() {
             }
         }
 
-        if square.rank() == 6 {
+        if from_square.rank() == 6 {
             let black_dbl_pawn_pushes = BitBoard(only_square >> 16);
             unsafe {
                 PAWN_DBL_PUSHES[Color::Black as usize][from_square_index as usize] =

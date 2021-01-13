@@ -1,8 +1,10 @@
 use super::{gen_moves, get_moves};
 use crate::chess::{Board, Movement};
 
-pub const NOT_A_FILE: u64 = 0xfefefefefefefefe; // ~0x0101010101010101
-pub const NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f; // ~0x8080808080808080
+pub const NOT_A_FILE: u64 = 0xfefefefefefefefe;
+pub const NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f;
+pub const NOT_AB_FILE: u64 = 0xfcfcfcfcfcfcfcfc;
+pub const NOT_GH_FILE: u64 = 0x3f3f3f3f3f3f3f3f;
 
 #[allow(dead_code)]
 pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
@@ -33,15 +35,3 @@ pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
         }
     }
 }
-
-// pub fn bitboard_to_squares(bitboard: &BitBoard) -> Vec<Square> {
-//     (0..64)
-//         .filter_map(|i| {
-//             if bitboard.get(Square(i)) {
-//                 Some(Square(i))
-//             } else {
-//                 None
-//             }
-//         })
-//         .collect::<Vec<Square>>()
-// }
