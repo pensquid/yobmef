@@ -191,4 +191,13 @@ mod tests {
         let board = Board::from_fen("8/8/8/8/8/k7/6p1/K4N1R w - - 0 1").unwrap();
         moves_test(&board, "g2f1q g2f1r g2g1q g2h1r", "g2f1p g2h1k");
     }
+
+    #[test]
+    fn test_get_pawn_en_passant() {
+        let board =
+            Board::from_fen("rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3")
+                .unwrap();
+
+        moves_test(&board, "e5f6 e5e6", "e5d6");
+    }
 }
