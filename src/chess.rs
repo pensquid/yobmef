@@ -39,6 +39,7 @@ impl Square {
         Some(Square::new(rank_index, file_index))
     }
 
+    // TODO: Convert to return String
     pub fn to_notation(&self) -> (char, char) {
         ((self.rank() + b'1') as char, (self.file() + b'a') as char)
     }
@@ -267,6 +268,17 @@ impl Board {
         old_piece
     }
 
+    // Same as replace_mut but removes the piece at the square
+    pub fn remove_mut(&mut self, square: Square) -> Option<Piece> {
+        let old_piece = self.piece_on(square);
+        if let Some(old_piece) = old_piece {
+            self.pieces[old_piece as usize].flip_mut(square);
+            self.color_combined[self.side_to_move.other() as usize].flip_mut(square);
+        }
+
+        old_piece
+    }
+
     pub fn assert_valid(&self) {
         let bitboard = self.color_combined_both();
 
@@ -274,15 +286,25 @@ impl Board {
             let sq = Square(sq);
 
             if bitboard.get(sq) {
-                // multiple pieces on the same square
+                // Multiple pieces on the same square
                 let num_on_square: u8 = (0..NUM_PIECES).map(|p| self.pieces[p].get(sq) as u8).sum();
                 assert_eq!(num_on_square, 1, "multiple pieces on {}", sq);
 
-                // multiple ownership
+                // Multiple ownership
                 let num_owners: u8 = (0..NUM_COLORS)
                     .map(|c| self.color_combined[c].get(sq) as u8)
                     .sum();
                 assert_eq!(num_owners, 1, "{} owners of square {}", num_owners, sq);
+            } else {
+                for piece in 0..NUM_PIECES {
+                    if self.pieces[piece].get(sq) {
+                        panic!(
+                            "piece {:?} owns square {} but isn't owned by color",
+                            Piece::from_usize(piece),
+                            sq
+                        );
+                    }
+                }
             }
         }
 
@@ -431,6 +453,13 @@ impl Board {
                 return None;
             }
             self.replace_mut(promoted_piece, movement.to_square);
+        } else if self.en_passant == Some(movement.to_square) {
+            self.replace_mut(piece, movement.to_square);
+            self.remove_mut(if self.side_to_move == Color::White {
+                movement.to_square.down(1).unwrap()
+            } else {
+                movement.to_square.up(1).unwrap()
+            });
         } else {
             self.replace_mut(piece, movement.to_square);
         }
