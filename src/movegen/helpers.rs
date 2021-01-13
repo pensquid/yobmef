@@ -28,18 +28,24 @@ pub const NOT_H_FILE: u64 = !H_FILE;
 pub const NOT_AB_FILE: u64 = !(A_FILE | B_FILE);
 pub const NOT_GH_FILE: u64 = !(G_FILE | H_FILE);
 
-pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
-    gen_moves();
-    let moves = get_moves(&board);
-
-    let mut legal_str = moves
+pub fn moves_to_str(moves: &Vec<Movement>) -> String {
+    let s = moves
         .iter()
         .map(|mv| mv.to_notation())
         .collect::<Vec<String>>()
         .join(", ");
-    if legal_str == "" {
-        legal_str = "<none>".to_string();
+    if s == "" {
+        "<none>".to_string()
+    } else {
+        s
     }
+}
+
+pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
+    gen_moves();
+    let moves = get_moves(&board);
+
+    let legal_str = moves_to_str(&moves);
 
     for lan in legal.split(' ') {
         if !moves.contains(&Movement::from_notation(lan).unwrap()) {

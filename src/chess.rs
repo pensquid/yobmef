@@ -6,7 +6,7 @@ pub const NUM_PIECES: usize = 6;
 
 pub const STARTING_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Square(pub u8);
 
 impl fmt::Display for Square {
@@ -90,7 +90,7 @@ impl Square {
 }
 
 // Calling it Movement and not Move because "move" is a keyword
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Movement {
     from_square: Square,
     to_square: Square,
@@ -159,7 +159,7 @@ pub enum CastlingSide {
     BlackQueenside = 3,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Piece {
     Pawn = 0,
     Knight = 1,
@@ -472,11 +472,12 @@ impl Board {
         self.color_combined[color as usize].flip_mut(movement.to_square);
 
         // Store en passant passing square
-        let is_double_move = if color == Color::White {
-            movement.to_square.rank() - movement.from_square.rank() == 2
-        } else {
-            movement.from_square.rank() - movement.to_square.rank() == 2
-        };
+        let is_double_move = piece == Piece::Pawn
+            && if color == Color::White {
+                movement.to_square.rank() - movement.from_square.rank() == 2
+            } else {
+                movement.from_square.rank() - movement.to_square.rank() == 2
+            };
 
         if piece == Piece::Pawn && is_double_move {
             let passing_square = if color == Color::White {
