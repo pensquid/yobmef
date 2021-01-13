@@ -35,10 +35,8 @@ impl Movement {
         let to_notation = self.to_square.to_notation();
 
         let mut lan = String::new();
-        lan.push(from_notation.1);
-        lan.push(from_notation.0);
-        lan.push(to_notation.1);
-        lan.push(to_notation.0);
+        lan.push_str(&from_notation);
+        lan.push_str(&to_notation);
 
         if let Some(piece) = self.promote {
             lan.push(piece.as_char());

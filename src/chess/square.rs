@@ -5,8 +5,7 @@ pub struct Square(pub u8);
 
 impl fmt::Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let (rank, file) = self.to_notation();
-        write!(f, "{}{}", file, rank)
+        write!(f, "{}", self.to_notation())
     }
 }
 
@@ -33,9 +32,11 @@ impl Square {
         Some(Square::new(rank_index, file_index))
     }
 
-    // TODO: Convert to return String
-    pub fn to_notation(&self) -> (char, char) {
-        ((self.rank() + b'1') as char, (self.file() + b'a') as char)
+    pub fn to_notation(&self) -> String {
+        let mut s = String::new();
+        s.push((self.file() + b'a') as char);
+        s.push((self.file() + b'a') as char);
+        s
     }
 
     pub fn rank(&self) -> u8 {
