@@ -3,7 +3,7 @@ use super::{gen_moves, get_moves};
 use crate::chess::{Board, Movement};
 
 // <3 kognise
-// we could inline shifts of the different files but this is more readable.
+// We could inline shifts of the different files but this is more readable.
 pub const A_FILE: u64 = 0x101010101010101;
 pub const B_FILE: u64 = A_FILE << 1;
 pub const C_FILE: u64 = A_FILE << 2;

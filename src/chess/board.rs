@@ -102,10 +102,10 @@ impl Board {
 
         // Check number of kings (1 each)
         let kings = self.pieces(Piece::King);
-        let num_white_kings = kings.mask(self.color_combined(Color::White)).sum();
+        let num_white_kings = (*kings & *self.color_combined(Color::White)).population();
         assert_eq!(num_white_kings, 1, "{} white kings", num_white_kings);
 
-        let num_black_kings = kings.mask(self.color_combined(Color::Black)).sum();
+        let num_black_kings = (*kings & *self.color_combined(Color::Black)).population();
         assert_eq!(num_black_kings, 1, "{} black kings", num_black_kings);
     }
 
@@ -147,8 +147,7 @@ impl Board {
     }
 
     pub fn color_combined_both(&self) -> BitBoard {
-        self.color_combined(Color::White)
-            .merge(self.color_combined(Color::Black))
+        *self.color_combined(Color::White) | *self.color_combined(Color::Black)
     }
 
     pub fn from_fen(s: &str) -> Option<Board> {

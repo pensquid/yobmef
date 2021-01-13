@@ -59,10 +59,8 @@ pub fn gen_pawn_moves() {
 pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
     // We need bitwise not because we want the mask to cancel when
     // a piece *IS* there, not when it isen't
-    let all_pieces = board.color_combined_both().not();
-    let my_pawns = board
-        .pieces(Piece::Pawn)
-        .mask(&board.color_combined(board.side_to_move));
+    let all_pieces = !board.color_combined_both();
+    let my_pawns = *board.pieces(Piece::Pawn) & *board.color_combined(board.side_to_move);
 
     let mut their_pieces = board.color_combined(board.side_to_move.other()).clone();
     if let Some(sq) = board.en_passant {
@@ -83,25 +81,23 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
         let mut moves_bitboard = BitBoard::empty();
 
         // Attacks
-        moves_bitboard.merge_mut(&pawn_attacks(from_square, board.side_to_move));
-        moves_bitboard.mask_mut(&their_pieces);
+        moves_bitboard |= pawn_attacks(from_square, board.side_to_move);
+        moves_bitboard &= their_pieces;
 
         // Single pushes
         let mut pushes = pawn_pushes(from_square, board.side_to_move).clone();
-        pushes.mask_mut(&all_pieces);
-        moves_bitboard.merge_mut(&pushes);
+        pushes &= all_pieces;
+        moves_bitboard |= pushes;
 
         // Double pushes
         let mut dbl_pushes = pawn_dbl_pushes(from_square, board.side_to_move).clone();
-        dbl_pushes.mask_mut(&all_pieces);
-        dbl_pushes.mask_mut(
-            &(if board.side_to_move == Color::White {
-                BitBoard(all_pieces.0 << 8)
-            } else {
-                BitBoard(all_pieces.0 >> 8)
-            }),
-        );
-        moves_bitboard.merge_mut(&dbl_pushes);
+        dbl_pushes &= all_pieces;
+        dbl_pushes |= if board.side_to_move == Color::White {
+            BitBoard(all_pieces.0 << 8)
+        } else {
+            BitBoard(all_pieces.0 >> 8)
+        };
+        moves_bitboard |= dbl_pushes;
 
         // Add all the moves
         for to_square_index in 0..64 {

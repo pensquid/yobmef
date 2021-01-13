@@ -77,20 +77,35 @@ impl BitBoard {
     }
 
     #[inline]
-    pub fn population(&mut self) -> u8 {
+    pub fn population(&self) -> u8 {
         // https://www.chessprogramming.org/Population_Count
 
         (0..64).map(|i| self.get(Square(i)) as u8).sum()
     }
 }
 
+// impl Deref for BitBoard {
+//     type Target = u64;
+
+//     fn deref(&self) -> &Self::Target {
+//         &self.0
+//     }
+// }
+
 macro_rules! impl_op {
     ($op:ident, $fun:ident) => {
         use std::ops::$op;
-        impl $op for BitBoard {
+        impl $op<Self> for BitBoard {
             type Output = Self;
 
             fn $fun(self, other: Self) -> Self::Output {
+                BitBoard(self.0.$fun(other.0))
+            }
+        }
+        impl<'b> $op<&'b Self> for BitBoard {
+            type Output = Self;
+
+            fn $fun(self, other: &'b Self) -> Self::Output {
                 BitBoard(self.0.$fun(other.0))
             }
         }
@@ -102,6 +117,21 @@ macro_rules! impl_op_assign {
         use std::ops::$op;
         impl $op for BitBoard {
             fn $fun(&mut self, rhs: Self) {
+                self.0.$fun(rhs.0);
+            }
+        }
+        impl<'b> $op<&'b Self> for BitBoard {
+            fn $fun(&mut self, rhs: &'b Self) {
+                &self.0.$fun(rhs.0);
+            }
+        }
+        impl<'a> $op<Self> for &'a mut BitBoard {
+            fn $fun(&mut self, rhs: Self) {
+                self.0.$fun(rhs.0);
+            }
+        }
+        impl<'a, 'b> $op<&'b Self> for &'a mut BitBoard {
+            fn $fun(&mut self, rhs: &'b Self) {
                 self.0.$fun(rhs.0);
             }
         }
@@ -122,6 +152,15 @@ impl_op_assign!(ShlAssign, shl_assign);
 
 impl_op!(Shr, shr);
 impl_op_assign!(ShrAssign, shr_assign);
+
+use std::ops::Not;
+impl Not for BitBoard {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        BitBoard(!self.0)
+    }
+}
 
 #[cfg(test)]
 mod tests {

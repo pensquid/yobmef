@@ -29,16 +29,16 @@ pub fn gen_knight_moves() {
 }
 
 pub fn get_knight_moves(board: &Board, moves: &mut Vec<Movement>) {
-    let my_pieces = board.color_combined(board.side_to_move);
-    let my_knights = board.pieces(Piece::Knight).mask(my_pieces);
-    let move_locations = my_pieces.not();
+    let my_pieces = *board.color_combined(board.side_to_move);
+    let my_knights = *board.pieces(Piece::Knight) & my_pieces;
+    let move_locations = !my_pieces;
 
     for from_square_index in 0..64 {
         let from_square = Square(from_square_index);
         if !my_knights.get(from_square) {
             continue;
         }
-        let moves_bitboard = knight_moves(from_square).mask(&move_locations);
+        let moves_bitboard = knight_moves(from_square) & move_locations;
 
         for to_square_index in 0..64 {
             let to_square = Square(to_square_index);

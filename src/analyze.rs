@@ -51,7 +51,7 @@ fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
     };
 
     let bitboard = board.pieces(piece);
-    let mut bitboard = bitboard.mask(&board.color_combined(color));
+    let mut bitboard = *bitboard & *board.color_combined(color);
     if color == Color::Black {
         bitboard.flip_vertical_mut()
     };

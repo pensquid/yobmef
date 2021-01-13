@@ -13,16 +13,16 @@ pub fn gen_king_moves() {
         let mut king_moves: u64 = 0;
         let only_square = 1 << from_square_index;
 
-        king_moves |= (only_square << 8) & !RANK_1; // up
-        king_moves |= (only_square << 9) & !(RANK_1 | A_FILE); // up-right
-        king_moves |= (only_square << 7) & !(RANK_1 | H_FILE); // up-left
+        king_moves |= (only_square << 8) & !RANK_1; // Up
+        king_moves |= (only_square << 9) & !(RANK_1 | A_FILE); // Up-right
+        king_moves |= (only_square << 7) & !(RANK_1 | H_FILE); // Up-left
 
-        king_moves |= (only_square >> 8) & !RANK_8; // down
-        king_moves |= (only_square >> 7) & !(RANK_8 | A_FILE); // down-right
-        king_moves |= (only_square >> 9) & !(RANK_8 | H_FILE); // down-left
+        king_moves |= (only_square >> 8) & !RANK_8; // Down
+        king_moves |= (only_square >> 7) & !(RANK_8 | A_FILE); // Down-right
+        king_moves |= (only_square >> 9) & !(RANK_8 | H_FILE); // Down-left
 
-        king_moves |= (only_square >> 1) & !H_FILE; // left
-        king_moves |= (only_square << 1) & !A_FILE; // right
+        king_moves |= (only_square >> 1) & !H_FILE; // Left
+        king_moves |= (only_square << 1) & !A_FILE; // Right
 
         unsafe {
             KING_MOVES[from_square_index as usize] = BitBoard(king_moves);
@@ -31,10 +31,10 @@ pub fn gen_king_moves() {
 }
 
 pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>) {
-    let our_pieces = board.color_combined(board.side_to_move);
-    let his_pieces = board.color_combined(board.side_to_move.other());
-    let king = board.pieces(Piece::King).mask(our_pieces);
-    let pieces_mask = our_pieces.merge(his_pieces).not();
+    let our_pieces = *board.color_combined(board.side_to_move);
+    let his_pieces = *board.color_combined(board.side_to_move.other());
+    let king = *board.pieces(Piece::King) & our_pieces;
+    let pieces_mask = !(our_pieces | his_pieces);
 
     // TODO: extract this loop into a helper (common pattern)
     for from_square_index in 0..64 {
@@ -46,7 +46,7 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>) {
 
         // TODO Handle check (mask with attacked squares)
         // eprintln!("king moves at {}\n{}", from_square, king_moves(from_square));
-        let moves_bitboard = king_moves(from_square).mask(&pieces_mask);
+        let moves_bitboard = king_moves(from_square) & pieces_mask;
 
         for to_square_index in 0..64 {
             let to_square = Square(to_square_index);
@@ -58,7 +58,7 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>) {
             moves.push(movement);
         }
 
-        // if we have more then one king; we've got bigger problems
+        // If we have more then one king; we've got bigger problems
         break;
     }
 }

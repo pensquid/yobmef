@@ -35,7 +35,7 @@ impl Square {
     pub fn to_notation(&self) -> String {
         let mut s = String::new();
         s.push((self.file() + b'a') as char);
-        s.push((self.file() + b'a') as char);
+        s.push((self.rank() + b'1') as char);
         s
     }
 
