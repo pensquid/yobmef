@@ -46,10 +46,6 @@ impl Engine {
             EngineMessage::IsReady => println!("readyok"),
             EngineMessage::Quit => std::process::exit(0),
 
-            EngineMessage::Stop => {
-                //
-            }
-
             EngineMessage::Position(board, moves) => {
                 let mut board: Board = board.clone();
                 for movement in moves {

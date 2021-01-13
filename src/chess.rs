@@ -214,18 +214,6 @@ impl Piece {
         }
     }
 
-    // TODO: Finish later
-    // pub fn as_char_fancy(&self, color: Color) -> char {
-    //     match color {
-    //         Color::White => {
-    //             match self {
-    //                 Piece::Pawn => '♙',
-    //                 Piece::Knight => '♘',
-    //             }
-    //         }
-    //     }
-    // }
-
     pub fn can_promote_to(&self) -> bool {
         self != &Piece::Pawn && self != &Piece::King
     }
@@ -265,7 +253,7 @@ impl fmt::Display for Board {
 }
 
 impl Board {
-    // replace old piece with new piece, return old piece
+    // Replace old piece with new piece, return old piece,
     // if the board is invalid, get ready for some fun debugging
     pub fn replace_mut(&mut self, piece: Piece, square: Square) -> Option<Piece> {
         let old_piece = self.piece_on(square);

@@ -1,3 +1,5 @@
+use chess::Board;
+
 use crate::chess;
 use std::str::{FromStr, Split};
 
@@ -61,7 +63,7 @@ pub enum EngineMessage {
     IsReady,
 
     UCINewGame,
-    Position(chess::Board, Vec<chess::Movement>),
+    Position(Board, Vec<chess::Movement>),
     Go(Go),
 
     Stop,
@@ -94,38 +96,39 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
         "isready" => EngineMessage::IsReady,
 
         "ucinewgame" => EngineMessage::UCINewGame,
-        "position" => match words.next()? {
-            // TODO: Clean up the duplication here
-            "startpos" => {
-                loop {
-                    let word = words.next();
-                    match word {
-                        Some("moves") => break,
-                        None => return Some(EngineMessage::Position(chess::Board::from_start_pos(), Vec::new())),
-                        _ => continue,
+        "position" => {
+            let board;
+            let mut moves = Vec::new();
+
+            match words.next()? {
+                "startpos" => {
+                    board = Board::from_start_pos();
+
+                    if let Some("moves") = words.next() {
+                        moves = get_moves(words)?;
                     }
                 }
 
-                EngineMessage::Position(chess::Board::from_start_pos(), get_moves(words)?)
-            }
+                "fen" => {
+                    let mut fen = Vec::new();
 
-            "fen" => {
-                let mut fen = Vec::new();
-                loop {
-                    let word = words.next();
-                    match word {
-                        Some("moves") => break,
-                        Some(chunk) => fen.push(chunk),
-                        None => return Some(EngineMessage::Position(chess::Board::from_start_pos(), Vec::new())),
+                    loop {
+                        let word = words.next();
+                        match word {
+                            Some(chunk) => fen.push(chunk),
+                            _ => break,
+                        }
                     }
+                    let fen = fen.join(" ");
+                    board = Board::from_fen(&fen)?;
+                    moves = get_moves(words)?;
                 }
-                let fen = fen.join(" ");
 
-                EngineMessage::Position(chess::Board::from_fen(&fen)?, get_moves(words)?)
+                _ => return None,
             }
 
-            _ => return None,
-        },
+            EngineMessage::Position(board, moves)
+        }
         "go" => {
             let mut go = Go::empty();
 
@@ -175,6 +178,8 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
 
 #[cfg(test)]
 mod tests {
+    use chess::Movement;
+
     use super::*;
 
     #[test]
@@ -196,5 +201,28 @@ mod tests {
             parse("go ponder"),
             Some(EngineMessage::Go(Go::variant(GoVariant::Ponder)))
         );
+    }
+
+    #[test]
+    fn test_uci() {
+        assert_eq!(parse("uci"), Some(EngineMessage::UCI))
+    }
+
+    #[test]
+    fn test_position() {
+        assert_eq!(
+            parse("position startpos"),
+            Some(EngineMessage::Position(Board::from_start_pos(), Vec::new()))
+        );
+
+        assert_eq!(
+            parse("position startpos moves e2e4"),
+            Some(EngineMessage::Position(
+                Board::from_start_pos(),
+                vec![Movement::from_notation("e2e4").unwrap()]
+            ))
+        );
+
+        assert_eq!(parse("position"), None);
     }
 }

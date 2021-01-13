@@ -1,18 +1,26 @@
 use crate::chess::{Board, Color, Movement, Piece, Square};
-use crate::movegen::helpers::bitboard_to_squares;
 use crate::{bitboard::BitBoard, chess::NUM_PIECES};
 
 use super::helpers::{NOT_A_FILE, NOT_H_FILE};
 
-static mut PAWN_ATTACKS: [[BitBoard; 64]; NUM_PIECES] = [[BitBoard::empty(); 64]; NUM_PIECES];
+// 48 because we don't need the top or bottom rows for pawns
+static mut PAWN_ATTACKS: [[BitBoard; 48]; NUM_PIECES] = [[BitBoard::empty(); 48]; NUM_PIECES];
+static mut PAWN_PUSHES: [[BitBoard; 48]; NUM_PIECES] = [[BitBoard::empty(); 48]; NUM_PIECES];
+static mut PAWN_DBL_PUSHES: [[BitBoard; 48]; NUM_PIECES] = [[BitBoard::empty(); 48]; NUM_PIECES];
 
 fn pawn_attacks(square: Square, color: Color) -> BitBoard {
-    unsafe { PAWN_ATTACKS[color as usize][square.0 as usize] }
+    unsafe { PAWN_ATTACKS[color as usize][(square.0 - 8) as usize] }
+}
+fn pawn_pushes(square: Square, color: Color) -> BitBoard {
+    unsafe { PAWN_PUSHES[color as usize][(square.0 - 8) as usize] }
+}
+fn pawn_dbl_pushes(square: Square, color: Color) -> BitBoard {
+    unsafe { PAWN_DBL_PUSHES[color as usize][(square.0 - 8) as usize] }
 }
 
 pub fn gen_pawn_moves() {
-    for from_square_index in 0..64 {
-        let only_square = 1 << from_square_index;
+    for from_square_index in 0..48 {
+        let only_square = 1 << (from_square_index + 8);
 
         // Even a fucking gradeschooler would then know
         let white_pawn_attacks =
@@ -20,9 +28,30 @@ pub fn gen_pawn_moves() {
         let black_pawn_attacks =
             BitBoard(((only_square >> 9) & NOT_H_FILE) | ((only_square >> 7) & NOT_A_FILE));
 
+        let white_pawn_pushes = BitBoard(only_square << 8);
+        let black_pawn_pushes = BitBoard(only_square >> 8);
+        
+        if Square(from_square_index).rank() == 1 {
+            let white_dbl_pawn_pushes = BitBoard(only_square << 16);
+            unsafe {
+                PAWN_DBL_PUSHES[Color::White as usize][from_square_index as usize] =
+                white_dbl_pawn_pushes;
+            }
+        }
+
+        if Square(from_square_index).rank() == 6 {
+            let black_dbl_pawn_pushes = BitBoard(only_square >> 16);
+            unsafe {
+                PAWN_DBL_PUSHES[Color::Black as usize][from_square_index as usize] =
+                black_dbl_pawn_pushes;
+            }
+        }
+
         unsafe {
             PAWN_ATTACKS[Color::White as usize][from_square_index as usize] = white_pawn_attacks;
             PAWN_ATTACKS[Color::Black as usize][from_square_index as usize] = black_pawn_attacks;
+            PAWN_PUSHES[Color::White as usize][from_square_index as usize] = white_pawn_pushes;
+            PAWN_PUSHES[Color::Black as usize][from_square_index as usize] = black_pawn_pushes;
         }
     }
 }
@@ -38,38 +67,74 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
         their_pieces.flip_mut(sq);
     }
 
+    for from_square_index in 0..48 {
+        let from_square = Square(from_square_index + 8);
+        if !my_pawns.get(from_square) { continue; }
+
+        let mut moves_bitboard = BitBoard::empty();
+
+        // Attacks
+        moves_bitboard.merge_mut(&pawn_attacks(from_square, board.side_to_move));
+        moves_bitboard.mask_mut(&their_pieces);
+
+        // Single pushes
+        let mut pushes = pawn_pushes(from_square, board.side_to_move).clone();
+        pushes.mask_mut(&all_pieces);
+        moves_bitboard.merge_mut(&pushes);
+
+        // Double pushes
+        let mut dbl_pushes = pawn_dbl_pushes(from_square, board.side_to_move).clone();
+        dbl_pushes.mask_mut(&all_pieces);
+        dbl_pushes.mask_mut(
+            &(if board.side_to_move == Color::White {
+                BitBoard(all_pieces.0 << 8)
+            } else {
+                BitBoard(all_pieces.0 >> 8)
+            }),
+        );
+        moves_bitboard.merge_mut(&dbl_pushes);
+        eprintln!("dbl pushes\n{}", dbl_pushes);
+
+        // Add all the moves
+        for to_square_index in 0..48 {
+            let to_square = Square(to_square_index + 8);
+            if !moves_bitboard.get(to_square) { continue; }
+            moves.push(Movement::new(from_square, to_square, None));
+        }
+    }
+
     // TODO: Add promotion and optimize
-    bitboard_to_squares(&my_pawns)
-        .iter()
-        .for_each(|from_square| {
-            let valid_attacks = pawn_attacks(*from_square, board.side_to_move).mask(&their_pieces);
+    // bitboard_to_squares(&my_pawns)
+    //     .iter()
+    //     .for_each(|from_square| {
+    //         let valid_attacks = pawn_attacks(*from_square, board.side_to_move).mask(&their_pieces);
 
-            bitboard_to_squares(&valid_attacks)
-                .iter()
-                .for_each(|to_square| {
-                    moves.push(Movement::new(*from_square, *to_square, None));
-                });
+    //         bitboard_to_squares(&valid_attacks)
+    //             .iter()
+    //             .for_each(|to_square| {
+    //                 moves.push(Movement::new(*from_square, *to_square, None));
+    //             });
 
-            let up_square = match board.side_to_move {
-                Color::White => from_square.up(1),
-                Color::Black => from_square.down(1),
-            }.unwrap();
-            if !all_pieces.get(up_square) {
-                moves.push(Movement::new(*from_square, up_square, None));
+    //         let up_square = match board.side_to_move {
+    //             Color::White => from_square.up(1),
+    //             Color::Black => from_square.down(1),
+    //         }.unwrap();
+    //         if !all_pieces.get(up_square) {
+    //             moves.push(Movement::new(*from_square, up_square, None));
 
-                let up_two_square = match board.side_to_move {
-                    Color::White => from_square.up(2),
-                    Color::Black => from_square.down(2),
-                }.unwrap();
-                let needed_two_rank = match board.side_to_move {
-                    Color::White => 1,
-                    Color::Black => 6,
-                };
-                if from_square.rank() == needed_two_rank && !all_pieces.get(up_two_square) {
-                    moves.push(Movement::new(*from_square, up_two_square, None));
-                }
-            }
-        });
+    //             let up_two_square = match board.side_to_move {
+    //                 Color::White => from_square.up(2),
+    //                 Color::Black => from_square.down(2),
+    //             }.unwrap();
+    //             let needed_two_rank = match board.side_to_move {
+    //                 Color::White => 1,
+    //                 Color::Black => 6,
+    //             };
+    //             if from_square.rank() == needed_two_rank && !all_pieces.get(up_two_square) {
+    //                 moves.push(Movement::new(*from_square, up_two_square, None));
+    //             }
+    //         }
+    //     });
 }
 
 #[cfg(test)]
