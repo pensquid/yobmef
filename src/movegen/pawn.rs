@@ -20,6 +20,7 @@ fn pawn_dbl_pushes(square: Square, color: Color) -> BitBoard {
 
 pub fn gen_pawn_moves() {
     for from_square_index in 0..48 {
+        let square = Square(from_square_index + 8);
         let only_square = 1 << (from_square_index + 8);
 
         // Even a fucking gradeschooler would then know
@@ -30,20 +31,19 @@ pub fn gen_pawn_moves() {
 
         let white_pawn_pushes = BitBoard(only_square << 8);
         let black_pawn_pushes = BitBoard(only_square >> 8);
-        
-        if Square(from_square_index).rank() == 1 {
+        if square.rank() == 1 {
             let white_dbl_pawn_pushes = BitBoard(only_square << 16);
             unsafe {
                 PAWN_DBL_PUSHES[Color::White as usize][from_square_index as usize] =
-                white_dbl_pawn_pushes;
+                    white_dbl_pawn_pushes;
             }
         }
 
-        if Square(from_square_index).rank() == 6 {
+        if square.rank() == 6 {
             let black_dbl_pawn_pushes = BitBoard(only_square >> 16);
             unsafe {
                 PAWN_DBL_PUSHES[Color::Black as usize][from_square_index as usize] =
-                black_dbl_pawn_pushes;
+                    black_dbl_pawn_pushes;
             }
         }
 
@@ -57,7 +57,9 @@ pub fn gen_pawn_moves() {
 }
 
 pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
-    let all_pieces = board.color_combined_both();
+    // We need bitwise not because we want the mask to cancel when
+    // a piece *IS* there, not when it isen't
+    let all_pieces = board.color_combined_both().not();
     let my_pawns = board
         .pieces(Piece::Pawn)
         .mask(&board.color_combined(board.side_to_move));
@@ -67,9 +69,16 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
         their_pieces.flip_mut(sq);
     }
 
+    let promotion_rank = match board.side_to_move {
+        Color::White => 7,
+        Color::Black => 0,
+    };
+
     for from_square_index in 0..48 {
         let from_square = Square(from_square_index + 8);
-        if !my_pawns.get(from_square) { continue; }
+        if !my_pawns.get(from_square) {
+            continue;
+        }
 
         let mut moves_bitboard = BitBoard::empty();
 
@@ -95,45 +104,23 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
         moves_bitboard.merge_mut(&dbl_pushes);
 
         // Add all the moves
-        for to_square_index in 0..48 {
-            let to_square = Square(to_square_index + 8);
-            if !moves_bitboard.get(to_square) { continue; }
-            moves.push(Movement::new(from_square, to_square, None));
+        for to_square_index in 0..64 {
+            let to_square = Square(to_square_index);
+
+            if !moves_bitboard.get(to_square) {
+                continue;
+            }
+
+            if to_square.rank() == promotion_rank {
+                moves.push(Movement::new(from_square, to_square, Some(Piece::Bishop)));
+                moves.push(Movement::new(from_square, to_square, Some(Piece::Rook)));
+                moves.push(Movement::new(from_square, to_square, Some(Piece::Knight)));
+                moves.push(Movement::new(from_square, to_square, Some(Piece::Queen)));
+            } else {
+                moves.push(Movement::new(from_square, to_square, None));
+            }
         }
     }
-
-    // TODO: Add promotion and optimize
-    // bitboard_to_squares(&my_pawns)
-    //     .iter()
-    //     .for_each(|from_square| {
-    //         let valid_attacks = pawn_attacks(*from_square, board.side_to_move).mask(&their_pieces);
-
-    //         bitboard_to_squares(&valid_attacks)
-    //             .iter()
-    //             .for_each(|to_square| {
-    //                 moves.push(Movement::new(*from_square, *to_square, None));
-    //             });
-
-    //         let up_square = match board.side_to_move {
-    //             Color::White => from_square.up(1),
-    //             Color::Black => from_square.down(1),
-    //         }.unwrap();
-    //         if !all_pieces.get(up_square) {
-    //             moves.push(Movement::new(*from_square, up_square, None));
-
-    //             let up_two_square = match board.side_to_move {
-    //                 Color::White => from_square.up(2),
-    //                 Color::Black => from_square.down(2),
-    //             }.unwrap();
-    //             let needed_two_rank = match board.side_to_move {
-    //                 Color::White => 1,
-    //                 Color::Black => 6,
-    //             };
-    //             if from_square.rank() == needed_two_rank && !all_pieces.get(up_two_square) {
-    //                 moves.push(Movement::new(*from_square, up_two_square, None));
-    //             }
-    //         }
-    //     });
 }
 
 #[cfg(test)]
@@ -182,13 +169,13 @@ mod tests {
 
     #[test]
     fn test_white_pawn_promote() {
-        let board = Board::from_fen("4r1b1/5P2/8/8/8/k7/8/K7 b - - 0 1").unwrap();
+        let board = Board::from_fen("4r1b1/5P2/8/8/8/k7/8/K7 w - - 0 1").unwrap();
         moves_test(&board, "f7e8q f7e8r f7f8q f7f8r f7g8q f7g8r", "f7g8k f7f8k f7f8p");
     }
 
     #[test]
     fn test_black_pawn_promote() {
-        let board = Board::from_fen("8/8/8/8/8/k7/6p1/K4N1R w - - 0 1").unwrap();
+        let board = Board::from_fen("8/8/8/8/8/k7/6p1/K4N1R b - - 0 1").unwrap();
         moves_test(&board, "g2f1q g2f1r g2g1q g2h1r", "g2f1p g2h1k");
     }
 
