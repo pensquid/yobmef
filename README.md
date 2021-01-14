@@ -17,8 +17,8 @@ A bad UCI chess engine written from complete scratch in Rust
     - [ ] Cannot move into check
   - [ ] If in check, you must get out of check
   - [x] Knights
-  - [ ] Rooks
-  - [ ] Bishops
-  - [ ] Queens
+  - [x] Rooks
+  - [x] Bishops
+  - [x] Queens
   - [ ] Castling
 
