@@ -129,9 +129,6 @@ fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
     cur_offset + questions.len()
 }
 
-// FIXME: This is currently completely borked, spins into an infinite loop
-// and then gets stuck, might have something to do with MOVE_RAYS, not sure
-// but it's 2am so I need sleep
 pub fn gen_all_magics() {
     let mut cur_offset = 0;
 
