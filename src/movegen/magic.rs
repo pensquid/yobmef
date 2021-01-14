@@ -69,6 +69,8 @@ impl MagicSquare {
     }
 }
 
+static SEEDS: [u64; 8] = [8198, 15098, 15153, 12593, 16340, 19763, 55569, 7831];
+
 // TODO: Go through, fully re-comprehend, and refactor this BS
 fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
     let (questions, answers) = get_questions_and_answers(from_sq, piece);
@@ -102,7 +104,7 @@ fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
     );
 
     let mut done = false;
-    let mut rng = StdRng::seed_from_u64(0xDEADBEEF12345678);
+    let mut rng = StdRng::seed_from_u64(SEEDS[from_sq.rank() as usize]);
 
     while !done {
         let magic_bitboard = random_bitboard(&mut rng);
