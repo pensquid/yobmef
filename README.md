@@ -1,12 +1,10 @@
 ## yobmef
 
-A chess engine in rust
-
+A bad UCI chess engine written from complete scratch in Rust
 
 ## TODO
 
-- [ ] Refactor make_move_mut to return a `Result`
-- [ ] Factor `Square`, `Piece`, `Color`, `Movement` and `Board` to separate files
+- [x] Factor `Square`, `Piece`, `Color`, `Movement` and `Board` to separate files
 - [ ] Add UCI tests
 - [ ] Finish movegen
   - [x] Pawns
