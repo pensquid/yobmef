@@ -4,6 +4,7 @@ use crate::{
     bitboard::BitBoard,
     chess::{Board, Movement, Square},
 };
+use std::sync::Once;
 
 // <3 kognise
 // We could inline shifts of the different files but this is more readable
@@ -45,8 +46,12 @@ pub fn moves_to_str(moves: &Vec<Movement>) -> String {
     }
 }
 
+static START: Once = Once::new();
+
 pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
-    gen_moves();
+    START.call_once(|| {
+        gen_moves();
+    });
     let moves = get_moves(&board);
 
     let legal_str = moves_to_str(&moves);
