@@ -2,7 +2,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use super::magic_utils::{
-    get_occupancy_mask, get_questions_and_answers, get_rays, random_bitboard, NUM_MOVES,
+    get_occupancy_mask, get_questions_and_answers, random_bitboard, NUM_MOVES,
 };
 
 use crate::bitboard::BitBoard;
@@ -11,10 +11,6 @@ use crate::chess::{Board, Movement, Piece, Square};
 static mut MOVES: [BitBoard; NUM_MOVES] = [BitBoard::empty(); NUM_MOVES];
 static mut ROOK_MAGICS: [MagicSquare; 64] = [MagicSquare::empty(); 64];
 static mut BISHOP_MAGICS: [MagicSquare; 64] = [MagicSquare::empty(); 64];
-
-// For storing some info for gen_single_magic
-// TODO: Can this be compartmentalized?
-static mut MOVE_RAYS: [BitBoard; NUM_MOVES] = [BitBoard::empty(); NUM_MOVES];
 
 #[derive(Debug, Clone, Copy)]
 pub struct MagicSquare {
@@ -69,7 +65,7 @@ impl MagicSquare {
         eprintln!("offset: {}", self.offset);
         eprintln!("hash: {}", hash);
 
-        unsafe { *MOVES.get_unchecked(hash) }
+        unsafe { MOVES[hash] }
     }
 }
 
@@ -79,30 +75,11 @@ static SEEDS: [u64; 8] = [8198, 15098, 15153, 12593, 16340, 19763, 55569, 7831];
 fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
     let (questions, answers) = get_questions_and_answers(from_sq, piece);
 
-    let mut new_offset = cur_offset;
-    for i in 0..cur_offset {
-        let mut found = true;
-
-        for j in 0..answers.len() {
-            unsafe {
-                if MOVE_RAYS[i + j] & get_rays(from_sq, piece) != BitBoard::empty() {
-                    found = false;
-                    break;
-                }
-            }
-        }
-
-        if found {
-            new_offset = i;
-            break;
-        }
-    }
-
     let occupancy_mask = get_occupancy_mask(from_sq, piece);
     let mut new_magic = MagicSquare::new(
         BitBoard::empty(),
         occupancy_mask,
-        new_offset as u32,
+        cur_offset as u32,
         (questions.len().leading_zeros() + 1) as u8,
     );
 
@@ -121,7 +98,7 @@ fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
         let mut new_answers = vec![BitBoard::empty(); questions.len()];
         done = true;
         for i in 0..questions.len() {
-            let hash = ((magic_bitboard * questions[i]).0 >> (new_magic.right_shift as u64));
+            let hash = (magic_bitboard * questions[i]).0 >> (new_magic.right_shift as u64);
             let j = hash as usize;
             if new_answers[j] == BitBoard::empty() {
                 new_answers[j] = answers[i];
@@ -145,19 +122,11 @@ fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
         for i in 0..questions.len() {
             let hash = (new_magic.number * questions[i]) >> (new_magic.right_shift as u64);
             let j = hash.0 as usize;
-            // NOTE(uli): chess crate does |=, makes no sense
             MOVES[(new_magic.offset as usize) + j] = answers[i];
-            MOVE_RAYS[(new_magic.offset as usize) + j] = get_rays(from_sq, piece);
         }
     }
 
-    if new_offset + questions.len() < cur_offset {
-        new_offset = cur_offset;
-    } else {
-        new_offset += questions.len();
-    }
-
-    new_offset
+    cur_offset + questions.len()
 }
 
 // FIXME: This is currently completely borked, spins into an infinite loop
@@ -230,8 +199,8 @@ pub mod tests {
 
     #[test]
     fn test_rook_move_lookup() {
+        gen_all_magics();
         let sq = Square::from_notation("d5").unwrap();
-        let hash = gen_single_magic(sq, Piece::Rook, 0);
 
         let mut occupancy = BitBoard::empty();
         occupancy.flip_mut(Square::from_notation("d3").unwrap());
@@ -254,18 +223,17 @@ pub mod tests {
         bitboard_test(&moves, "f4 e5 h4 h2 f2", "e1 g3 d6 c7 b8");
     }
 
-    // #[test]
-    // fn test_get_all_sliding_moves() {
-    //     gen_all_magics();
-    //     let board = Board::from_fen("4K3/7k/Q4b2/8/6p1/R7/4B3/8 w - - 0 1").unwrap();
+    #[test]
+    fn test_get_all_sliding_moves() {
+        let board = Board::from_fen("4K3/7k/Q4b2/8/6p1/R7/4B3/8 w - - 0 1").unwrap();
 
-    //     // Rook moves
-    //     moves_test(&board, "a3e3 a3h3 a3a2 a3a5", "a3a6 a3a8");
+        // Rook moves
+        moves_test(&board, "a3e3 a3h3 a3a2 a3a5", "a3a6 a3a8");
 
-    //     // Bishop moves
-    //     moves_test(&board, "e2g4 e2b5 e2d1", "e2h5 e2a6");
+        // Bishop moves
+        moves_test(&board, "e2g4 e2b5 e2d1", "e2h5 e2a6");
 
-    //     // Queen moves
-    //     moves_test(&board, "a6d6 a6c8 a6a4 a6d3f6 a6", "a6g6 a6e2 a6a3 a6a2");
-    // }
+        // Queen moves
+        moves_test(&board, "a6d6 a6c8 a6a4 a6d3", "a6g6 a6e2 a6a3 a6a2");
+    }
 }
