@@ -19,7 +19,7 @@ pub fn get_moves(board: &Board) -> Vec<Movement> {
     pawn::get_pawn_moves(board, &mut moves);
     knight::get_knight_moves(board, &mut moves);
     king::get_king_moves(board, &mut moves);
-    // magic::get_sliding_moves(board, &mut moves);
+    magic::get_sliding_moves(board, &mut moves);
     moves
 }
 

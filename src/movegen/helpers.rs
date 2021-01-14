@@ -93,7 +93,7 @@ pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
         for coord in excluded.split(' ') {
             if squares.contains(&Square::from_notation(coord).unwrap()) {
                 eprintln!("{}", board);
-                panic!("{} should be included in bitboard", coord);
+                panic!("{} should be excluded in bitboard", coord);
             }
         }
     }

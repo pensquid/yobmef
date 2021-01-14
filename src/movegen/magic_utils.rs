@@ -236,7 +236,7 @@ mod tests {
 
         let (questions, answers) = get_questions_and_answers(sq, piece);
 
-        assert_eq!(questions.len().count_ones(), 1);
+        assert_eq!(questions.len().count_ones(), 1); // check for power of 2
         assert_eq!(questions.len(), answers.len());
 
         assert_eq!(
