@@ -132,18 +132,23 @@ fn bishop_directions() -> Vec<fn(Square) -> Option<Square>> {
 // and answers are the moves accounting for the blocking
 
 fn get_questions(occupancy_mask: BitBoard) -> Vec<BitBoard> {
-    // TODO: Do these have to be 1u64?
     let mut result = Vec::new();
 
-    for i in 0..(1u64 << occupancy_mask.count_ones()) {
+    let mut one_bits = Vec::new();
+    for sq_index in 0..64 {
+        let sq = Square(sq_index);
+        if occupancy_mask.get(sq) { one_bits.push(sq); }
+    }
+
+    for i in 0..(1 << occupancy_mask.count_ones()) {
         let mut current = BitBoard::empty();
 
-        for j in 0..occupancy_mask.count_ones() {
-            // TODO: Figure out what the hell this is checking for
-            if (i & (1u64 << j)) == (1u64 << j) {
-                current |= BitBoard(1 << j);
+        for (j, sq) in one_bits.iter().enumerate() {
+            if (i >> j) & 1 == 1 {
+                current.flip_mut(*sq);
             }
         }
+
         result.push(current);
     }
 

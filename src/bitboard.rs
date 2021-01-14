@@ -145,9 +145,6 @@ macro_rules! impl_op_assign {
     };
 }
 
-impl_op!(Mul, mul);
-impl_op_assign!(MulAssign, mul_assign);
-
 impl_op!(BitOr, bitor);
 impl_op_assign!(BitOrAssign, bitor_assign);
 
@@ -162,6 +159,22 @@ impl_op_assign!(ShlAssign, shl_assign);
 
 impl_op!(Shr, shr);
 impl_op_assign!(ShrAssign, shr_assign);
+
+use std::ops::Mul;
+impl Mul<u64> for BitBoard {
+    type Output = Self;
+
+    fn mul(self, other: u64) -> Self::Output {
+        BitBoard(self.0.overflowing_mul(other).0)
+    }
+}
+impl Mul<BitBoard> for BitBoard {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self::Output {
+        BitBoard(self.0.overflowing_mul(other.0).0)
+    }
+}
 
 use std::ops::Not;
 impl Not for BitBoard {

@@ -57,8 +57,8 @@ impl MagicSquare {
             );
         }
         
-        let raw_hash = self.number.0.overflowing_mul((self.occupancy_mask & occupancy).0).0;
-        let shifted_hash = (raw_hash as usize) >> (self.right_shift as usize);
+        let raw_hash = self.number * (self.occupancy_mask & occupancy);
+        let shifted_hash = (raw_hash.0 as usize) >> (self.right_shift as usize);
         let hash = (self.offset as usize) + shifted_hash;
         
         eprintln!("self: {:?}", self);
@@ -68,13 +68,13 @@ impl MagicSquare {
     }
 }
 
+// TODO: Go through, fully re-comprehend, and refactor this BS
 fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
     let (questions, answers) = get_questions_and_answers(from_sq, piece);
     let occupancy_mask = get_occupancy_mask(from_sq, piece);
 
     let mut new_offset = cur_offset;
 
-    // TODO: Figure this out, looks important
     for i in 0..cur_offset {
         let mut found = true;
 
@@ -107,7 +107,7 @@ fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
         let magic_bitboard = random_bitboard(&mut rng);
 
         // DEAR GOD
-        if (occupancy_mask.0.overflowing_mul(magic_bitboard.0)).0.count_ones() < 6 {
+        if (occupancy_mask * magic_bitboard).count_ones() < 6 {
             continue;
         }
 
@@ -115,7 +115,7 @@ fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
         let mut new_answers = vec![BitBoard::empty(); questions.len()];
         done = true;
         for i in 0..questions.len() {
-            let j = ((magic_bitboard * questions[i]) >> (new_magic.right_shift as u64)).0 as usize;
+            let j = ((magic_bitboard * questions[i]).0 >> (new_magic.right_shift as u64)) as usize;
             if new_answers[j] == BitBoard::empty() || new_answers[j] == answers[i] {
                 new_answers[j] = answers[i];
             } else {
@@ -154,11 +154,8 @@ fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
 pub fn gen_all_magics() {
     let mut cur_offset = 0;
 
-    // TODO: Can this be refactored into one loop?
     for sq_index in 0..64 {
         cur_offset = gen_single_magic(Square(sq_index), Piece::Bishop, cur_offset);
-    }
-    for sq_index in 0..64 {
         cur_offset = gen_single_magic(Square(sq_index), Piece::Rook, cur_offset);
     }
 }
@@ -184,31 +181,27 @@ pub mod tests {
 
     #[test]
     fn test_rook_move_lookup() {
+        gen_all_magics();
         let sq = Square::from_notation("d5").unwrap();
-        gen_single_magic(sq, Piece::Rook, 0);
 
         let mut occupancy = BitBoard::empty();
         occupancy.flip_mut(Square::from_notation("d3").unwrap());
         occupancy.flip_mut(Square::from_notation("h5").unwrap());
 
-        // So, the test is failing because this square just doesn't exist in the map,
-        // I think it might not be properly generating permutations, if you wanna try
-        // and fix this good luck <3
-        unsafe {
-            for bb in MOVES.iter() {
-                if bb.get(Square::from_notation("f5").unwrap())
-                    && bb.get(Square::from_notation("h5").unwrap())
-                    && bb.get(Square::from_notation("d3").unwrap())
-                    && bb.get(Square::from_notation("b5").unwrap())
-                    && !bb.get(Square::from_notation("d2").unwrap())
-                    && !bb.get(Square::from_notation("d1").unwrap())
-                    && !bb.get(Square::from_notation("g3").unwrap()) {
-                        eprintln!("found:\n{}", bb);
-                    }
-            }
-        }
-
         let moves = get_sliding_moves(sq, Piece::Rook, &occupancy);
         bitboard_test(&moves, "f5 h5 d3 b5", "d2 d1 g3");
+    }
+
+    #[test]
+    fn test_bishop_move_lookup() {
+        gen_all_magics();
+        let sq = Square::from_notation("g3").unwrap();
+
+        let mut occupancy = BitBoard::empty();
+        occupancy.flip_mut(Square::from_notation("d1").unwrap());
+        occupancy.flip_mut(Square::from_notation("e6").unwrap());
+
+        let moves = get_sliding_moves(sq, Piece::Rook, &occupancy);
+        bitboard_test(&moves, "a2 d5 d1 e6", "g8 b3 f3");
     }
 }
