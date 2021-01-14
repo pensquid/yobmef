@@ -27,10 +27,10 @@ impl fmt::Display for Board {
             write!(f, "{}", rank_index + 1)?;
 
             for file_index in 0..8 {
-                let square = Square::new(rank_index, file_index);
+                let sq = Square::new(rank_index, file_index);
 
-                let character = match self.piece_on(square) {
-                    Some(piece) => piece.as_char_color(self.color_on(square).unwrap()),
+                let character = match self.piece_on(sq) {
+                    Some(piece) => piece.as_char_color(self.color_on(sq).unwrap()),
                     None => '.',
                 };
 
@@ -102,10 +102,10 @@ impl Board {
 
         // Check number of kings (1 each)
         let kings = self.pieces(Piece::King);
-        let num_white_kings = (*kings & *self.color_combined(Color::White)).population();
+        let num_white_kings = (*kings & *self.color_combined(Color::White)).count_ones();
         assert_eq!(num_white_kings, 1, "{} white kings", num_white_kings);
 
-        let num_black_kings = (*kings & *self.color_combined(Color::Black)).population();
+        let num_black_kings = (*kings & *self.color_combined(Color::Black)).count_ones();
         assert_eq!(num_black_kings, 1, "{} black kings", num_black_kings);
     }
 
@@ -171,10 +171,10 @@ impl Board {
                     } else {
                         Color::Black
                     };
-                    let square = Square::new(rank_index, file_index);
+                    let sq = Square::new(rank_index, file_index);
 
-                    board.pieces[piece as usize].flip_mut(square);
-                    board.color_combined[color as usize].flip_mut(square);
+                    board.pieces[piece as usize].flip_mut(sq);
+                    board.color_combined[color as usize].flip_mut(sq);
                     file_index += 1;
                 }
             }

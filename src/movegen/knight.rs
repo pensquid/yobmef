@@ -9,21 +9,21 @@ fn knight_moves(square: Square) -> BitBoard {
 }
 
 pub fn gen_knight_moves() {
-    for from_square_index in 0..64 {
-        let only_square = 1 << from_square_index;
+    for from_sq_index in 0..64 {
+        let only_from_sq = 1 << from_sq_index;
 
         let mut knight_moves: u64 = 0;
-        knight_moves |= (only_square << 17) & NOT_A_FILE;
-        knight_moves |= (only_square << 10) & NOT_AB_FILE;
-        knight_moves |= (only_square >> 6) & NOT_AB_FILE;
-        knight_moves |= (only_square >> 15) & NOT_A_FILE;
-        knight_moves |= (only_square << 15) & NOT_H_FILE;
-        knight_moves |= (only_square << 6) & NOT_GH_FILE;
-        knight_moves |= (only_square >> 10) & NOT_GH_FILE;
-        knight_moves |= (only_square >> 17) & NOT_H_FILE;
+        knight_moves |= (only_from_sq << 17) & NOT_A_FILE;
+        knight_moves |= (only_from_sq << 10) & NOT_AB_FILE;
+        knight_moves |= (only_from_sq >> 6) & NOT_AB_FILE;
+        knight_moves |= (only_from_sq >> 15) & NOT_A_FILE;
+        knight_moves |= (only_from_sq << 15) & NOT_H_FILE;
+        knight_moves |= (only_from_sq << 6) & NOT_GH_FILE;
+        knight_moves |= (only_from_sq >> 10) & NOT_GH_FILE;
+        knight_moves |= (only_from_sq >> 17) & NOT_H_FILE;
 
         unsafe {
-            KNIGHT_MOVES[from_square_index as usize] = BitBoard(knight_moves);
+            KNIGHT_MOVES[from_sq_index as usize] = BitBoard(knight_moves);
         }
     }
 }
@@ -33,20 +33,20 @@ pub fn get_knight_moves(board: &Board, moves: &mut Vec<Movement>) {
     let my_knights = *board.pieces(Piece::Knight) & my_pieces;
     let move_locations = !my_pieces;
 
-    for from_square_index in 0..64 {
-        let from_square = Square(from_square_index);
-        if !my_knights.get(from_square) {
+    for from_sq_index in 0..64 {
+        let only_from_sq = Square(from_sq_index);
+        if !my_knights.get(only_from_sq) {
             continue;
         }
-        let moves_bitboard = knight_moves(from_square) & move_locations;
+        let moves_bitboard = knight_moves(only_from_sq) & move_locations;
 
-        for to_square_index in 0..64 {
-            let to_square = Square(to_square_index);
-            if !moves_bitboard.get(to_square) {
+        for to_sq_index in 0..64 {
+            let to_sq = Square(to_sq_index);
+            if !moves_bitboard.get(to_sq) {
                 continue;
             }
 
-            moves.push(Movement::new(from_square, to_square, None));
+            moves.push(Movement::new(only_from_sq, to_sq, None));
         }
     }
 }

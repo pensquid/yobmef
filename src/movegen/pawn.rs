@@ -19,39 +19,39 @@ fn pawn_dbl_pushes(square: Square, color: Color) -> BitBoard {
 }
 
 pub fn gen_pawn_moves() {
-    for from_square_index in 0..48 {
-        let from_square = Square(from_square_index + 8);
-        let only_square = 1 << (from_square_index + 8);
+    for from_sq_index in 0..48 {
+        let from_sq = Square(from_sq_index + 8);
+        let only_from_sq = 1 << (from_sq_index + 8);
 
         // Even a fucking gradeschooler would then know
         let white_pawn_attacks =
-            BitBoard(((only_square << 9) & NOT_A_FILE) | ((only_square << 7) & NOT_H_FILE));
+            BitBoard(((only_from_sq << 9) & NOT_A_FILE) | ((only_from_sq << 7) & NOT_H_FILE));
         let black_pawn_attacks =
-            BitBoard(((only_square >> 9) & NOT_H_FILE) | ((only_square >> 7) & NOT_A_FILE));
+            BitBoard(((only_from_sq >> 9) & NOT_H_FILE) | ((only_from_sq >> 7) & NOT_A_FILE));
 
-        let white_pawn_pushes = BitBoard(only_square << 8);
-        let black_pawn_pushes = BitBoard(only_square >> 8);
-        if from_square.rank() == 1 {
-            let white_dbl_pawn_pushes = BitBoard(only_square << 16);
+        let white_pawn_pushes = BitBoard(only_from_sq << 8);
+        let black_pawn_pushes = BitBoard(only_from_sq >> 8);
+        if from_sq.rank() == 1 {
+            let white_dbl_pawn_pushes = BitBoard(only_from_sq << 16);
             unsafe {
-                PAWN_DBL_PUSHES[Color::White as usize][from_square_index as usize] =
+                PAWN_DBL_PUSHES[Color::White as usize][from_sq_index as usize] =
                     white_dbl_pawn_pushes;
             }
         }
 
-        if from_square.rank() == 6 {
-            let black_dbl_pawn_pushes = BitBoard(only_square >> 16);
+        if from_sq.rank() == 6 {
+            let black_dbl_pawn_pushes = BitBoard(only_from_sq >> 16);
             unsafe {
-                PAWN_DBL_PUSHES[Color::Black as usize][from_square_index as usize] =
+                PAWN_DBL_PUSHES[Color::Black as usize][from_sq_index as usize] =
                     black_dbl_pawn_pushes;
             }
         }
 
         unsafe {
-            PAWN_ATTACKS[Color::White as usize][from_square_index as usize] = white_pawn_attacks;
-            PAWN_ATTACKS[Color::Black as usize][from_square_index as usize] = black_pawn_attacks;
-            PAWN_PUSHES[Color::White as usize][from_square_index as usize] = white_pawn_pushes;
-            PAWN_PUSHES[Color::Black as usize][from_square_index as usize] = black_pawn_pushes;
+            PAWN_ATTACKS[Color::White as usize][from_sq_index as usize] = white_pawn_attacks;
+            PAWN_ATTACKS[Color::Black as usize][from_sq_index as usize] = black_pawn_attacks;
+            PAWN_PUSHES[Color::White as usize][from_sq_index as usize] = white_pawn_pushes;
+            PAWN_PUSHES[Color::Black as usize][from_sq_index as usize] = black_pawn_pushes;
         }
     }
 }
@@ -72,25 +72,25 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
         Color::Black => 0,
     };
 
-    for from_square_index in 0..48 {
-        let from_square = Square(from_square_index + 8);
-        if !my_pawns.get(from_square) {
+    for from_sq_index in 0..48 {
+        let from_sq = Square(from_sq_index + 8);
+        if !my_pawns.get(from_sq) {
             continue;
         }
 
         let mut moves_bitboard = BitBoard::empty();
 
         // Attacks
-        moves_bitboard |= pawn_attacks(from_square, board.side_to_move);
+        moves_bitboard |= pawn_attacks(from_sq, board.side_to_move);
         moves_bitboard &= their_pieces;
 
         // Single pushes
-        let mut pushes = pawn_pushes(from_square, board.side_to_move).clone();
+        let mut pushes = pawn_pushes(from_sq, board.side_to_move).clone();
         pushes &= all_pieces;
         moves_bitboard |= pushes;
 
         // Double pushes
-        let mut dbl_pushes = pawn_dbl_pushes(from_square, board.side_to_move).clone();
+        let mut dbl_pushes = pawn_dbl_pushes(from_sq, board.side_to_move).clone();
         dbl_pushes &= all_pieces;
         dbl_pushes &= if board.side_to_move == Color::White {
             BitBoard(all_pieces.0 << 8)
@@ -100,20 +100,20 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
         moves_bitboard |= dbl_pushes;
 
         // Add all the moves
-        for to_square_index in 0..64 {
-            let to_square = Square(to_square_index);
+        for to_sq_index in 0..64 {
+            let to_sq = Square(to_sq_index);
 
-            if !moves_bitboard.get(to_square) {
+            if !moves_bitboard.get(to_sq) {
                 continue;
             }
 
-            if to_square.rank() == promotion_rank {
-                moves.push(Movement::new(from_square, to_square, Some(Piece::Bishop)));
-                moves.push(Movement::new(from_square, to_square, Some(Piece::Rook)));
-                moves.push(Movement::new(from_square, to_square, Some(Piece::Knight)));
-                moves.push(Movement::new(from_square, to_square, Some(Piece::Queen)));
+            if to_sq.rank() == promotion_rank {
+                moves.push(Movement::new(from_sq, to_sq, Some(Piece::Bishop)));
+                moves.push(Movement::new(from_sq, to_sq, Some(Piece::Rook)));
+                moves.push(Movement::new(from_sq, to_sq, Some(Piece::Knight)));
+                moves.push(Movement::new(from_sq, to_sq, Some(Piece::Queen)));
             } else {
-                moves.push(Movement::new(from_square, to_square, None));
+                moves.push(Movement::new(from_sq, to_sq, None));
             }
         }
     }

@@ -9,23 +9,23 @@ fn king_moves(square: Square) -> BitBoard {
 }
 
 pub fn gen_king_moves() {
-    for from_square_index in 0..64 {
+    for from_sq_index in 0..64 {
         let mut king_moves: u64 = 0;
-        let only_square = 1 << from_square_index;
+        let only_from_sq = 1 << from_sq_index;
 
-        king_moves |= (only_square << 8) & !RANK_1; // Up
-        king_moves |= (only_square << 9) & !(RANK_1 | A_FILE); // Up-right
-        king_moves |= (only_square << 7) & !(RANK_1 | H_FILE); // Up-left
+        king_moves |= (only_from_sq << 8) & !RANK_1; // Up
+        king_moves |= (only_from_sq << 9) & !(RANK_1 | A_FILE); // Up-right
+        king_moves |= (only_from_sq << 7) & !(RANK_1 | H_FILE); // Up-left
 
-        king_moves |= (only_square >> 8) & !RANK_8; // Down
-        king_moves |= (only_square >> 7) & !(RANK_8 | A_FILE); // Down-right
-        king_moves |= (only_square >> 9) & !(RANK_8 | H_FILE); // Down-left
+        king_moves |= (only_from_sq >> 8) & !RANK_8; // Down
+        king_moves |= (only_from_sq >> 7) & !(RANK_8 | A_FILE); // Down-right
+        king_moves |= (only_from_sq >> 9) & !(RANK_8 | H_FILE); // Down-left
 
-        king_moves |= (only_square >> 1) & !H_FILE; // Left
-        king_moves |= (only_square << 1) & !A_FILE; // Right
+        king_moves |= (only_from_sq >> 1) & !H_FILE; // Left
+        king_moves |= (only_from_sq << 1) & !A_FILE; // Right
 
         unsafe {
-            KING_MOVES[from_square_index as usize] = BitBoard(king_moves);
+            KING_MOVES[from_sq_index as usize] = BitBoard(king_moves);
         }
     }
 }
@@ -37,24 +37,23 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>) {
     let pieces_mask = !(our_pieces | his_pieces);
 
     // TODO: extract this loop into a helper (common pattern)
-    for from_square_index in 0..64 {
-        let from_square = Square(from_square_index);
-        let only_square = 1 << from_square_index;
-        if (king.0 & only_square) == 0 {
+    for from_sq_index in 0..64 {
+        let from_sq = Square(from_sq_index);
+        let only_from_sq = 1 << from_sq_index;
+        if (king.0 & only_from_sq) == 0 {
             continue;
         }
 
         // TODO Handle check (mask with attacked squares)
-        // eprintln!("king moves at {}\n{}", from_square, king_moves(from_square));
-        let moves_bitboard = king_moves(from_square) & pieces_mask;
+        let moves_bitboard = king_moves(from_sq) & pieces_mask;
 
-        for to_square_index in 0..64 {
-            let to_square = Square(to_square_index);
-            if !moves_bitboard.get(to_square) {
+        for to_sq_index in 0..64 {
+            let to_sq = Square(to_sq_index);
+            if !moves_bitboard.get(to_sq) {
                 continue;
             }
 
-            let movement = Movement::new(from_square, to_square, None);
+            let movement = Movement::new(from_sq, to_sq, None);
             moves.push(movement);
         }
 

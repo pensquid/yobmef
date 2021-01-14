@@ -3,14 +3,16 @@ use crate::chess::{Board, Movement};
 mod helpers;
 mod king;
 mod knight;
+mod magic_utils;
 mod pawn;
-mod rook;
+// mod rook;
+pub mod magic;
 
 pub fn gen_moves() {
     pawn::gen_pawn_moves();
     knight::gen_knight_moves();
     king::gen_king_moves();
-    rook::gen_rook_moves();
+    // rook::gen_rook_moves();
 }
 
 pub fn get_moves(board: &Board) -> Vec<Movement> {
@@ -18,7 +20,7 @@ pub fn get_moves(board: &Board) -> Vec<Movement> {
     pawn::get_pawn_moves(board, &mut moves);
     knight::get_knight_moves(board, &mut moves);
     king::get_king_moves(board, &mut moves);
-    rook::get_rook_moves(board, &mut moves);
+    // rook::get_rook_moves(board, &mut moves);
     moves
 }
 

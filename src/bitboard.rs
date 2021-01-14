@@ -12,8 +12,8 @@ impl fmt::Display for BitBoard {
             write!(f, "{}", rank_index + 1)?;
 
             for file_index in 0..8 {
-                let square = Square::new(rank_index, file_index);
-                write!(f, " {}", if self.get(square) { 'X' } else { '.' })?;
+                let sq = Square::new(rank_index, file_index);
+                write!(f, " {}", if self.get(sq) { 'X' } else { '.' })?;
             }
             write!(f, "\n")?;
         }
@@ -77,20 +77,10 @@ impl BitBoard {
     }
 
     #[inline]
-    pub fn population(&self) -> u8 {
-        // https://www.chessprogramming.org/Population_Count
-
-        (0..64).map(|i| self.get(Square(i)) as u8).sum()
+    pub fn count_ones(&self) -> u8 {
+        self.0.count_ones() as u8
     }
 }
-
-// impl Deref for BitBoard {
-//     type Target = u64;
-
-//     fn deref(&self) -> &Self::Target {
-//         &self.0
-//     }
-// }
 
 macro_rules! impl_op {
     ($op:ident, $fun:ident) => {
@@ -109,13 +99,20 @@ macro_rules! impl_op {
                 BitBoard(self.0.$fun(other.0))
             }
         }
+        impl $op<u64> for BitBoard {
+            type Output = Self;
+
+            fn $fun(self, other: u64) -> Self::Output {
+                BitBoard(self.0.$fun(other))
+            }
+        }
     };
 }
 
 macro_rules! impl_op_assign {
     ($op:ident, $fun:ident) => {
         use std::ops::$op;
-        impl $op for BitBoard {
+        impl $op<Self> for BitBoard {
             fn $fun(&mut self, rhs: Self) {
                 self.0.$fun(rhs.0);
             }
@@ -135,8 +132,21 @@ macro_rules! impl_op_assign {
                 self.0.$fun(rhs.0);
             }
         }
+        impl $op<u64> for BitBoard {
+            fn $fun(&mut self, rhs: u64) {
+                self.0.$fun(rhs);
+            }
+        }
+        impl<'a> $op<u64> for &'a mut BitBoard {
+            fn $fun(&mut self, rhs: u64) {
+                self.0.$fun(rhs);
+            }
+        }
     };
 }
+
+impl_op!(Mul, mul);
+impl_op_assign!(MulAssign, mul_assign);
 
 impl_op!(BitOr, bitor);
 impl_op_assign!(BitOrAssign, bitor_assign);
@@ -193,7 +203,7 @@ mod tests {
     fn test_bitboard_population() {
         let mut b = BitBoard::empty();
         b.0 |= 0b1111;
-        assert_eq!(b.population(), 4);
+        assert_eq!(b.count_ones(), 4);
     }
 
     #[test]
