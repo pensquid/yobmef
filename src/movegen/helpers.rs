@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 use super::{gen_moves, get_moves};
-use crate::{bitboard::BitBoard, chess::{Board, Movement, Square}};
+use crate::{
+    bitboard::BitBoard,
+    chess::{Board, Movement, Square},
+};
 
 // <3 kognise
 // We could inline shifts of the different files but this is more readable
@@ -69,9 +72,11 @@ pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
     let mut squares = Vec::new();
     for sq_index in 0..64 {
         let sq = Square(sq_index);
-        if board.get(sq) { squares.push(sq); }
+        if board.get(sq) {
+            squares.push(sq);
+        }
     }
-    
+
     for coord in included.split(' ') {
         if !squares.contains(&Square::from_notation(coord).unwrap()) {
             eprintln!("{}", board);

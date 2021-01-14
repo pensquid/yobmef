@@ -34,11 +34,11 @@ pub fn get_knight_moves(board: &Board, moves: &mut Vec<Movement>) {
     let move_locations = !my_pieces;
 
     for from_sq_index in 0..64 {
-        let only_from_sq = Square(from_sq_index);
-        if !my_knights.get(only_from_sq) {
+        let from_sq = Square(from_sq_index);
+        if !my_knights.get(from_sq) {
             continue;
         }
-        let moves_bitboard = knight_moves(only_from_sq) & move_locations;
+        let moves_bitboard = knight_moves(from_sq) & move_locations;
 
         for to_sq_index in 0..64 {
             let to_sq = Square(to_sq_index);
@@ -46,7 +46,7 @@ pub fn get_knight_moves(board: &Board, moves: &mut Vec<Movement>) {
                 continue;
             }
 
-            moves.push(Movement::new(only_from_sq, to_sq, None));
+            moves.push(Movement::new(from_sq, to_sq, None));
         }
     }
 }

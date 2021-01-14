@@ -137,7 +137,9 @@ fn get_questions(occupancy_mask: BitBoard) -> Vec<BitBoard> {
     let mut one_bits = Vec::new();
     for sq_index in 0..64 {
         let sq = Square(sq_index);
-        if occupancy_mask.get(sq) { one_bits.push(sq); }
+        if occupancy_mask.get(sq) {
+            one_bits.push(sq);
+        }
     }
 
     for i in 0..(1 << occupancy_mask.count_ones()) {
@@ -194,15 +196,15 @@ pub fn get_questions_and_answers(sq: Square, piece: Piece) -> (Vec<BitBoard>, Ve
 
 #[cfg(test)]
 mod tests {
-    use crate::movegen::helpers::bitboard_test;
     use super::*;
+    use crate::movegen::helpers::bitboard_test;
 
     #[test]
     fn test_get_bishop_rays() {
         let rays = get_bishop_rays(Square::from_notation("d5").unwrap());
         bitboard_test(&rays, "c6 a8 b3 g2 e6", "b4 h5 d5");
     }
-    
+
     #[test]
     fn test_get_rook_rays() {
         let rays = get_rook_rays(Square::from_notation("a6").unwrap());

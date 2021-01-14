@@ -5,14 +5,15 @@ use super::magic_utils::{
     get_occupancy_mask, get_questions_and_answers, get_rays, random_bitboard, NUM_MOVES,
 };
 
-use crate::chess::Square;
-use crate::{bitboard::BitBoard, chess::Piece};
+use crate::bitboard::BitBoard;
+use crate::chess::{Board, Movement, Piece, Square};
 
 static mut MOVES: [BitBoard; NUM_MOVES] = [BitBoard::empty(); NUM_MOVES];
 static mut ROOK_MAGICS: [MagicSquare; 64] = [MagicSquare::empty(); 64];
 static mut BISHOP_MAGICS: [MagicSquare; 64] = [MagicSquare::empty(); 64];
 
 // For storing some info for gen_single_magic
+// TODO: Can this be compartmentalized?
 static mut MOVE_RAYS: [BitBoard; NUM_MOVES] = [BitBoard::empty(); NUM_MOVES];
 
 #[derive(Debug, Clone, Copy)]
@@ -56,11 +57,11 @@ impl MagicSquare {
                 "tried to lookup hash on an empty magic square, did you forget to run gen_moves?"
             );
         }
-        
+
         let raw_hash = self.number * (self.occupancy_mask & occupancy);
         let shifted_hash = (raw_hash.0 as usize) >> (self.right_shift as usize);
         let hash = (self.offset as usize) + shifted_hash;
-        
+
         eprintln!("self: {:?}", self);
         eprintln!("hash: {}", hash);
 
@@ -151,16 +152,21 @@ fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
     new_offset
 }
 
+// FIXME: This is currently completely borked, spins into an infinite loop
+// and then gets stuck, might have something to do with MOVE_RAYS, not sure
+// but it's 2am so I need sleep
 pub fn gen_all_magics() {
     let mut cur_offset = 0;
 
     for sq_index in 0..64 {
         cur_offset = gen_single_magic(Square(sq_index), Piece::Bishop, cur_offset);
+    }
+    for sq_index in 0..64 {
         cur_offset = gen_single_magic(Square(sq_index), Piece::Rook, cur_offset);
     }
 }
 
-pub fn get_sliding_moves(sq: Square, piece: Piece, occupancy: &BitBoard) -> BitBoard {
+fn get_sliding_moves_bb(sq: Square, piece: Piece, occupancy: &BitBoard) -> BitBoard {
     unsafe {
         if piece == Piece::Rook {
             let magic = ROOK_MAGICS[sq.0 as usize];
@@ -168,16 +174,55 @@ pub fn get_sliding_moves(sq: Square, piece: Piece, occupancy: &BitBoard) -> BitB
         } else if piece == Piece::Bishop {
             let magic = BISHOP_MAGICS[sq.0 as usize];
             magic.lookup_hash(occupancy)
+        } else if piece == Piece::Queen {
+            let bishop_magic = BISHOP_MAGICS[sq.0 as usize];
+            let rook_magic = ROOK_MAGICS[sq.0 as usize];
+            bishop_magic.lookup_hash(occupancy) | rook_magic.lookup_hash(occupancy)
         } else {
             panic!("{:?} is not a sliding piece", piece);
         }
     }
 }
 
+pub fn get_sliding_moves(board: &Board, moves: &mut Vec<Movement>) -> BitBoard {
+    let all_pieces = board.color_combined_both();
+    let my_pieces = *board.color_combined(board.side_to_move);
+
+    let my_queens = *board.pieces(Piece::Queen) & my_pieces;
+    let my_rooks = *board.pieces(Piece::Rook) & my_pieces;
+    let my_bishops = *board.pieces(Piece::Bishop) & my_pieces;
+
+    for from_sq_index in 0..64 {
+        let from_sq = Square(from_sq_index);
+        let moves_bitboard: BitBoard;
+
+        if my_rooks.get(from_sq) {
+            moves_bitboard = get_sliding_moves_bb(from_sq, Piece::Rook, &all_pieces) & !my_pieces;
+        } else if my_bishops.get(from_sq) {
+            moves_bitboard = get_sliding_moves_bb(from_sq, Piece::Bishop, &all_pieces) & !my_pieces;
+        } else if my_queens.get(from_sq) {
+            moves_bitboard = get_sliding_moves_bb(from_sq, Piece::Queen, &all_pieces) & !my_pieces;
+        } else {
+            continue;
+        }
+
+        for to_sq_index in 0..64 {
+            let to_sq = Square(to_sq_index);
+            if !moves_bitboard.get(to_sq) {
+                continue;
+            }
+
+            moves.push(Movement::new(from_sq, to_sq, None));
+        }
+    }
+
+    BitBoard::empty()
+}
+
 #[cfg(test)]
 pub mod tests {
-    use crate::movegen::helpers::bitboard_test;
     use super::*;
+    use crate::movegen::helpers::{bitboard_test, moves_test};
 
     #[test]
     fn test_rook_move_lookup() {
@@ -188,7 +233,7 @@ pub mod tests {
         occupancy.flip_mut(Square::from_notation("d3").unwrap());
         occupancy.flip_mut(Square::from_notation("h5").unwrap());
 
-        let moves = get_sliding_moves(sq, Piece::Rook, &occupancy);
+        let moves = get_sliding_moves_bb(sq, Piece::Rook, &occupancy);
         bitboard_test(&moves, "f5 h5 d3 b5", "d2 d1 g3");
     }
 
@@ -201,7 +246,22 @@ pub mod tests {
         occupancy.flip_mut(Square::from_notation("d1").unwrap());
         occupancy.flip_mut(Square::from_notation("e6").unwrap());
 
-        let moves = get_sliding_moves(sq, Piece::Rook, &occupancy);
+        let moves = get_sliding_moves_bb(sq, Piece::Rook, &occupancy);
         bitboard_test(&moves, "a2 d5 d1 e6", "g8 b3 f3");
+    }
+
+    #[test]
+    fn test_get_all_sliding_moves() {
+        gen_all_magics();
+        let board = Board::from_fen("4K3/7k/Q4b2/8/6p1/R7/4B3/8 w - - 0 1").unwrap();
+
+        // Rook moves
+        moves_test(&board, "a3e3 a3h3 a3a2 a3a5", "a3a6 a3a8");
+
+        // Bishop moves
+        moves_test(&board, "e2g4 e2b5 e2d1", "e2h5 e2a6");
+
+        // Queen moves
+        moves_test(&board, "a6d6 a6c8 a6a4 a6d3f6 a6", "a6g6 a6e2 a6a3 a6a2");
     }
 }
