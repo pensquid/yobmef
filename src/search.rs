@@ -33,78 +33,63 @@ impl Searcher {
     // TODO: Quiet search
     // TODO: Iterative deepening (stop when uci 'stop' is sent)
     pub fn search(&self, board: &Board) -> SearchResult {
+        self.alphabeta(board, 4, i16::MIN, i16::MAX)
+    }
+
+    pub fn alphabeta(
+        &self,
+        board: &Board,
+        depth: u16,
+        mut alpha: i16,
+        mut beta: i16,
+    ) -> SearchResult {
         let moves = get_sorted_moves(board);
         let is_game_over = moves.len() == 0;
-        if is_game_over {
+
+        if depth == 0 || is_game_over {
             return SearchResult {
                 eval: eval::get_score(board, moves.len()),
                 mv: None,
             };
         }
 
-        // (This will be replaced with iterative deepening later)
-        let depth = 3;
-
-        let turn = board.side_to_move.polarize();
-        let white = board.side_to_move == Color::White;
-        let better = if white { i16::gt } else { i16::lt };
-
-        let mut best_move = None;
-        let mut best_score = -eval::MATE * turn; // start with worst score
-
-        for mv in moves {
-            let score = self.alphabeta(&board.make_move(&mv), depth - 1, i16::MIN, i16::MAX);
-            if better(&score, &best_score) || best_move.is_none() {
-                best_score = score;
-                best_move = Some(mv);
-            }
-        }
-
-        SearchResult {
-            eval: best_score,
-            mv: best_move,
-        }
-    }
-
-    pub fn alphabeta(&self, board: &Board, depth: u16, mut alpha: i16, mut beta: i16) -> i16 {
-        let moves = get_sorted_moves(board);
-        let is_game_over = moves.len() == 0;
-
-        if depth == 0 || is_game_over {
-            return eval::get_score(board, moves.len());
-        }
-
-        let mut best;
+        let mut sr = SearchResult {
+            eval: -i16::MAX * board.side_to_move.polarize(),
+            mv: None,
+        };
 
         // This is ugly, normally I would use higher order functions
         // but this is easier to follow.
+        // TODO: Fix inconsitent usage of 'score' and 'eval'
 
         if board.side_to_move == Color::White {
-            best = -eval::MATE;
-
             for mv in moves {
                 let score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
-                best = i16::max(best, score);
+                if score.eval > sr.eval {
+                    sr.eval = score.eval;
+                    sr.mv = Some(mv);
+                }
 
-                alpha = i16::max(alpha, score);
+                alpha = i16::max(alpha, score.eval);
                 if beta <= alpha {
                     break;
                 }
             }
         } else {
-            best = eval::MATE;
-
             for mv in moves {
                 let score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
-                best = i16::min(best, score);
+                if score.eval < sr.eval {
+                    sr.eval = score.eval;
+                    sr.mv = Some(mv);
+                }
 
-                beta = i16::min(beta, score);
+                beta = i16::min(beta, score.eval);
                 if beta <= alpha {
                     break;
                 }
             }
         }
 
-        best
+        sr
     }
 }

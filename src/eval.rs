@@ -67,7 +67,7 @@ fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
         .sum()
 }
 
-pub const MATE: i16 = i16::MAX;
+pub const MATE: i16 = 10000;
 
 fn get_score_for_color(board: &Board, color: Color) -> i16 {
     let mut score = 0;
@@ -89,14 +89,16 @@ pub fn get_score(board: &Board, legal_move_count: usize) -> i16 {
         MATE * board.side_to_move.other().polarize()
     } else if legal_move_count > 0 {
         get_score_ongoing(board)
-    } else { 0 }
+    } else {
+        0
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{chess::Movement, movegen};
     use crate::movegen::gen_moves_once;
+    use crate::{chess::Movement, movegen};
 
     #[test]
     fn test_get_score_e2e4() {
