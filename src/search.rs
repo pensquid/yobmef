@@ -1,7 +1,6 @@
 use crate::chess::{Board, Color, Movement};
 use crate::eval;
 use crate::movegen;
-use std::thread;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SearchResult {
