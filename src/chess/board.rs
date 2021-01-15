@@ -1,6 +1,14 @@
 use crate::bitboard::BitBoard;
 use crate::chess::*;
+use crate::movegen;
 use std::fmt;
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum GameStatus {
+    Draw,
+    Ongoing,
+    Win(Color),
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CastlingSide {
@@ -58,6 +66,51 @@ impl Board {
         self.pieces[piece as usize].flip_mut(square);
 
         old_piece
+    }
+
+    pub fn in_check(&self) -> bool {
+        let attacked = movegen::get_attacked_squares(&self.other_side());
+        let our_pieces = self.color_combined(self.side_to_move);
+        let our_king = *self.pieces(Piece::King) & our_pieces;
+        (our_king & attacked).0 != 0
+    }
+
+    pub fn num_legal(&self) -> usize {
+        let legal = movegen::get_legal_moves(self);
+        legal.len()
+    }
+
+    pub fn in_checkmate(&self) -> bool {
+        self.in_check() && (self.num_legal() == 0)
+    }
+
+    pub fn game_over(&self) -> bool {
+        self.num_legal() == 0
+    }
+
+    // TODO
+    pub fn draw(&self) -> bool {
+        false
+    }
+
+    // Yeah you could optimize this a bunch
+    pub fn status(&self) -> GameStatus {
+        if self.in_checkmate() {
+            GameStatus::Win(self.side_to_move.other())
+        } else if self.other_side().in_checkmate() {
+            GameStatus::Win(self.side_to_move)
+        } else if self.draw() {
+            GameStatus::Draw
+        } else {
+            GameStatus::Ongoing
+        }
+    }
+
+    // TODO: Needed?
+    pub fn other_side(&self) -> Self {
+        let mut board = self.clone();
+        board.side_to_move = board.side_to_move.other();
+        board
     }
 
     // Same as replace_mut but removes the piece at the square
@@ -443,5 +496,32 @@ mod tests {
         b.make_move_mut(movement).unwrap();
 
         b.assert_valid();
+    }
+
+    use crate::movegen::gen_moves_once;
+
+    #[test]
+    fn test_is_in_check() {
+        gen_moves_once();
+
+        let board = Board::from_fen("k1R5/8/1K6/8/8/8/8/8 b - - 0 1").unwrap();
+        assert!(board.in_check(), "black should be in check");
+    }
+
+    #[test]
+    fn test_board_status_whitewin() {
+        gen_moves_once();
+
+        let board = Board::from_fen("k1R5/8/1K6/8/8/8/8/8 b - - 0 1").unwrap();
+        eprintln!("board:\n{}", board);
+        assert_eq!(board.status(), GameStatus::Win(Color::White));
+    }
+    #[test]
+    fn test_board_status_blackwin() {
+        gen_moves_once();
+
+        let board = Board::from_fen("K1r5/8/1k6/8/8/8/8/8 w - - 0 1").unwrap();
+        eprintln!("board:\n{}", board);
+        assert_eq!(board.status(), GameStatus::Win(Color::Black));
     }
 }

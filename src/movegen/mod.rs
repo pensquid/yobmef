@@ -1,5 +1,6 @@
 use crate::bitboard::BitBoard;
 use crate::chess::{Board, Movement};
+use std::sync::Once;
 
 mod helpers;
 mod king;
@@ -8,6 +9,13 @@ mod magic;
 mod magic_utils;
 mod pawn;
 
+static START: Once = Once::new();
+
+pub fn gen_moves_once() {
+    START.call_once(|| {
+        gen_moves();
+    });
+}
 
 pub fn gen_moves() {
     pawn::gen_pawn_moves();
@@ -25,28 +33,37 @@ pub fn get_pseudolegal_moves(board: &Board) -> Vec<Movement> {
     moves
 }
 
+pub fn get_attacked_squares(board: &Board) -> BitBoard {
+    let mut attacks = BitBoard::empty();
+    attacks |= pawn::get_pawn_attacks(&board, board.side_to_move);
+    attacks |= knight::get_knight_attacks(&board, board.side_to_move);
+    attacks |= king::get_king_attacks(&board, board.side_to_move);
+    attacks |= magic::get_sliding_attacks(&board, board.side_to_move);
+    let sliding = magic::get_sliding_attacks(&board, board.side_to_move);
+
+    attacks
+}
+
 pub fn get_legal_moves(board: &Board) -> Vec<Movement> {
     let pseudolegal = get_pseudolegal_moves(board);
 
-    pseudolegal.into_iter().filter(|mv| {
-        let after_move = board.make_move(mv);
+    pseudolegal
+        .into_iter()
+        .filter(|mv| {
+            let after_move = board.make_move(mv);
+            let attacks = get_attacked_squares(&after_move);
 
-        let mut attacks = BitBoard::empty();
-        attacks |= pawn::get_pawn_attacks(&after_move, after_move.side_to_move);
-        attacks |= knight::get_knight_attacks(&after_move, after_move.side_to_move);
-        attacks |= king::get_king_attacks(&after_move, after_move.side_to_move);
-        attacks |= magic::get_sliding_attacks(&after_move, after_move.side_to_move);
-
-        let only_our_king = 1 << after_move.king(board.side_to_move).0;
-        let is_in_check = (attacks.0 & only_our_king).count_ones() > 0;
-        !is_in_check
-    }).collect()
+            let only_our_king = 1 << after_move.king(board.side_to_move).0;
+            let is_in_check = (attacks.0 & only_our_king).count_ones() > 0;
+            !is_in_check
+        })
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
+    use super::helpers::assert_moves;
     use crate::chess::Board;
-    use super::{helpers::assert_moves};
 
     #[test]
     fn test_move_into_check() {

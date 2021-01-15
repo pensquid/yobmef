@@ -1,4 +1,4 @@
-use crate::chess::{Board, Color, Piece, Square};
+use crate::chess::{Board, Color, GameStatus, Piece, Square};
 
 // SHITTY SHIT HERE, JUST FOR EXPERIMENTATION, NOT FOR USE IN FINAL PROGRAM
 // Inspiration from:
@@ -67,9 +67,10 @@ fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
         .sum()
 }
 
+pub const MATE: i16 = i16::MAX;
+
 fn get_score_for_color(board: &Board, color: Color) -> i16 {
     let mut score = 0;
-
     score += get_score_for_piece(board, color, Piece::Pawn);
     score += get_score_for_piece(board, color, Piece::Knight);
     score += get_score_for_piece(board, color, Piece::Bishop);
@@ -79,22 +80,63 @@ fn get_score_for_color(board: &Board, color: Color) -> i16 {
     score
 }
 
-pub fn get_score(board: &Board) -> i16 {
+pub fn get_score_ongoing(board: &Board) -> i16 {
     get_score_for_color(board, Color::White) - get_score_for_color(&board, Color::Black)
+}
+
+pub fn get_score(board: &Board) -> i16 {
+    match board.status() {
+        GameStatus::Ongoing => get_score_ongoing(board),
+        GameStatus::Draw => 0,
+        GameStatus::Win(color) => match color {
+            Color::White => MATE,
+            Color::Black => -MATE,
+        },
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::chess::Movement;
+    use crate::movegen::gen_moves_once;
 
     #[test]
     fn test_get_score_e2e4() {
+        gen_moves_once();
+
         let mut b = Board::from_start_pos();
         b.make_move_mut(&Movement::from_notation("e2e4").expect("e2e4 move is valid"));
 
         let score = get_score(&b);
         eprintln!("score: {}", score);
         assert!(score > 0); // White should have the advantage
+    }
+
+    #[test]
+    fn test_get_score_mate_for_black() {
+        gen_moves_once();
+
+        let b =
+            Board::from_fen("r1b1kb1r/pppp1pp1/2n5/1B2p3/4PP2/6p1/PPPP2Pq/RNBQNRK1 b kq f3 0 8")
+                .unwrap();
+        let score = get_score(&b);
+
+        eprintln!("board:\n{}", b);
+        eprintln!("score (white in checkmate) = {}", score);
+        assert_eq!(score, -MATE);
+    }
+
+    #[test]
+    fn test_get_score_mate_for_white() {
+        gen_moves_once();
+
+        let b = Board::from_fen("k1R5/8/1K6/8/8/8/8/8 b - - 0 1").unwrap();
+        assert_eq!(b.status(), GameStatus::Win(Color::White));
+        let score = get_score(&b);
+
+        eprintln!("board:\n{}", b);
+        eprintln!("score (black in checkmate) = {}", score);
+        assert_eq!(score, MATE);
     }
 }

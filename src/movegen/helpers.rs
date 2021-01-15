@@ -1,7 +1,10 @@
 #![allow(dead_code)]
-use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}, sync::Once};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 
-use super::{gen_moves, get_legal_moves};
+use super::{gen_moves_once, get_legal_moves};
 use crate::{
     bitboard::BitBoard,
     chess::{Board, Movement, Square},
@@ -48,10 +51,8 @@ pub fn moves_to_str(moves: &Vec<Movement>) -> String {
     }
 }
 
-static START: Once = Once::new();
-
 pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
-    START.call_once(|| { gen_moves(); });
+    gen_moves_once();
     let moves = get_legal_moves(&board);
 
     let legal_str = moves_to_str(&moves);
@@ -74,6 +75,7 @@ pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
 }
 
 pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
+    gen_moves_once();
     let mut squares = Vec::new();
     for sq_index in 0..64 {
         let sq = Square(sq_index);
@@ -100,8 +102,6 @@ pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
 }
 
 pub fn assert_moves(board: &Board, moves: &str) {
-    START.call_once(|| { gen_moves(); });
-
     let mut want_moves = vec_moves(moves);
     let mut got_moves = get_legal_moves(board);
     want_moves.sort_by_key(|m| hash(m));
@@ -128,3 +128,4 @@ fn hash(mv: &Movement) -> u64 {
     mv.hash(&mut hasher);
     hasher.finish()
 }
+
