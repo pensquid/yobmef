@@ -4,13 +4,6 @@ use crate::movegen;
 use std::fmt;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum GameStatus {
-    Draw,
-    Ongoing,
-    Win(Color),
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CastlingSide {
     WhiteKingside = 0,
     WhiteQueenside = 1,
@@ -75,37 +68,6 @@ impl Board {
         (our_king & attacked).0 != 0
     }
 
-    pub fn num_legal(&self) -> usize {
-        let legal = movegen::get_legal_moves(self);
-        legal.len()
-    }
-
-    pub fn in_checkmate(&self) -> bool {
-        self.in_check() && (self.num_legal() == 0)
-    }
-
-    pub fn game_over(&self) -> bool {
-        self.num_legal() == 0
-    }
-
-    // TODO
-    pub fn draw(&self) -> bool {
-        false
-    }
-
-    // Yeah you could optimize this a bunch
-    pub fn status(&self) -> GameStatus {
-        if self.in_checkmate() {
-            GameStatus::Win(self.side_to_move.other())
-        } else if self.other_side().in_checkmate() {
-            GameStatus::Win(self.side_to_move)
-        } else if self.draw() {
-            GameStatus::Draw
-        } else {
-            GameStatus::Ongoing
-        }
-    }
-
     // TODO: Needed?
     pub fn other_side(&self) -> Self {
         let mut board = self.clone();
@@ -125,7 +87,7 @@ impl Board {
     }
 
     pub fn assert_valid(&self) {
-        let bitboard = self.color_combined_both();
+        let bitboard = self.combined();
 
         for sq in 0..64 {
             let sq = Square(sq);
@@ -201,7 +163,7 @@ impl Board {
         &self.color_combined[color as usize]
     }
 
-    pub fn color_combined_both(&self) -> BitBoard {
+    pub fn combined(&self) -> BitBoard {
         *self.color_combined(Color::White) | *self.color_combined(Color::Black)
     }
 
@@ -506,22 +468,5 @@ mod tests {
 
         let board = Board::from_fen("k1R5/8/1K6/8/8/8/8/8 b - - 0 1").unwrap();
         assert!(board.in_check(), "black should be in check");
-    }
-
-    #[test]
-    fn test_board_status_whitewin() {
-        gen_moves_once();
-
-        let board = Board::from_fen("k1R5/8/1K6/8/8/8/8/8 b - - 0 1").unwrap();
-        eprintln!("board:\n{}", board);
-        assert_eq!(board.status(), GameStatus::Win(Color::White));
-    }
-    #[test]
-    fn test_board_status_blackwin() {
-        gen_moves_once();
-
-        let board = Board::from_fen("K1r5/8/1k6/8/8/8/8/8 w - - 0 1").unwrap();
-        eprintln!("board:\n{}", board);
-        assert_eq!(board.status(), GameStatus::Win(Color::Black));
     }
 }

@@ -4,8 +4,8 @@ use crate::movegen;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SearchResult {
-    pub eval: i16,            // evaluation for the position
-    pub mv: Option<Movement>, // the best move
+    pub eval: i16,            // Evaluation for the position
+    pub mv: Option<Movement>, // The best move
 }
 
 #[derive(Debug)]
@@ -16,8 +16,9 @@ pub struct Searcher {
 // Sorting is very important for alpha beta search pruning
 fn get_sorted_moves(board: &Board) -> Vec<Movement> {
     let mut moves = movegen::get_legal_moves(board);
+    let legal_move_count = moves.len();
 
-    moves.sort_by_key(|m| eval::get_score(&board.make_move(m)));
+    moves.sort_by_key(|m| eval::get_score(&board.make_move(m), legal_move_count));
     if board.side_to_move == Color::White {
         moves.reverse()
     };
@@ -32,31 +33,28 @@ impl Searcher {
     // TODO: Quiet search
     // TODO: Iterative deepening (stop when uci 'stop' is sent)
     pub fn search(&self, board: &Board) -> SearchResult {
-        if board.game_over() {
+        let moves = get_sorted_moves(board);
+        let is_game_over = moves.len() == 0;
+        if is_game_over {
             return SearchResult {
-                eval: eval::get_score(board),
+                eval: eval::get_score(board, moves.len()),
                 mv: None,
             };
         }
 
-        // (this will be replaced with iterative deepening later)
+        // (This will be replaced with iterative deepening later)
         let depth = 3;
 
-        let turn = board.side_to_move.num(); // white=1, black=-1
+        let turn = board.side_to_move.polarize();
         let white = board.side_to_move == Color::White;
         let better = if white { i16::gt } else { i16::lt };
 
         let mut best_move = None;
         let mut best_score = -eval::MATE * turn; // start with worst score
 
-        let moves = get_sorted_moves(board);
         for mv in moves {
             let score = self.alphabeta(&board.make_move(&mv), depth - 1);
             if better(&score, &best_score) || best_move.is_none() {
-                // eprintln!(
-                //     "{}({:?}) better then {}({:?}) for {:?}",
-                //     score, mv, best_score, best_move, board.side_to_move
-                // );
                 best_score = score;
                 best_move = Some(mv);
             }
@@ -70,14 +68,12 @@ impl Searcher {
 
     // TODO: Add prune (currently just minimax)
     pub fn alphabeta(&self, board: &Board, depth: u16) -> i16 {
-        if depth == 0 || board.game_over() {
-            if board.game_over() {
-                eprintln!("game over {:?}\n{}", board.status(), board);
-            }
-            return eval::get_score(board);
-        }
+        let moves = get_sorted_moves(board);
+        let is_game_over = moves.len() == 0;
 
-        let moves = movegen::get_legal_moves(board); // TODO: Sort improves pruning
+        if depth == 0 || is_game_over {
+            return eval::get_score(board, moves.len());
+        }
 
         let mut best;
 

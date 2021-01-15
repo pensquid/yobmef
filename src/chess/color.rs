@@ -12,7 +12,7 @@ impl Color {
         }
     }
 
-    pub fn num(&self) -> i16 {
+    pub fn polarize(&self) -> i16 {
         match self {
             Color::White => 1,
             Color::Black => -1,

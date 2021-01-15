@@ -1,5 +1,5 @@
-use chess::{Board, Color, Movement};
-use search::{SearchResult, Searcher};
+use chess::Board;
+use search::Searcher;
 use std::io;
 use uci::EngineMessage;
 
@@ -42,19 +42,16 @@ impl Engine {
         Ok(())
     }
 
-    fn go(&self, opts: uci::Go) {
+    fn go(&self, _opts: uci::Go) {
         match &self.position {
             None => {
                 eprintln!("No position specified");
             }
 
             Some(board) => {
-                // let score = eval::get_score(&board);
                 let search_result = self.searcher.search(&board);
 
                 println!("info score cp {}", search_result.eval);
-
-                // will only fail at unwrap if board is gameover I think
                 println!("bestmove {}", search_result.mv.unwrap());
             }
         }
@@ -114,7 +111,7 @@ mod tests {
     // TODO: Use macro, move to separate file for search tests,
     //       This is only here so I can implement alphabeta without getting cancer.
 
-    use crate::movegen::gen_moves_once;
+    use crate::{chess::Movement, movegen::gen_moves_once, search::SearchResult};
 
     // search in tests (with fresh searcher)
     fn search(board: &Board) -> SearchResult {
@@ -127,7 +124,7 @@ mod tests {
 
         // return searcher.stop();
 
-        let mut searcher = Searcher::new();
+        let searcher = Searcher::new();
         searcher.search(board)
     }
 

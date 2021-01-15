@@ -39,8 +39,6 @@ pub fn get_attacked_squares(board: &Board) -> BitBoard {
     attacks |= knight::get_knight_attacks(&board, board.side_to_move);
     attacks |= king::get_king_attacks(&board, board.side_to_move);
     attacks |= magic::get_sliding_attacks(&board, board.side_to_move);
-    let sliding = magic::get_sliding_attacks(&board, board.side_to_move);
-
     attacks
 }
 
