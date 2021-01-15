@@ -1,6 +1,7 @@
 use crate::chess::{Board, Color, Movement};
 use crate::eval;
 use crate::movegen;
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct SearchResult {
     pub eval: i16,            // Evaluation for the position
