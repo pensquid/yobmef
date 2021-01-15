@@ -113,7 +113,7 @@ impl Engine {
 
         for mv in moves {
             let score = Self::alphabeta(&board.make_move(&mv), depth - 1);
-            if better(&score, &best_score) {
+            if better(&score, &best_score) || best_move.is_none() {
                 // eprintln!(
                 //     "{}({:?}) better then {}({:?}) for {:?}",
                 //     score, mv, best_score, best_move, board.side_to_move
