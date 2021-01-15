@@ -115,6 +115,7 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
                     loop {
                         let word = words.next();
                         match word {
+                            Some("moves") => break,
                             Some(chunk) => fen.push(chunk),
                             _ => break,
                         }
@@ -224,5 +225,16 @@ mod tests {
         );
 
         assert_eq!(parse("position"), None);
+
+        assert_eq!(
+            parse("position fen 2k5/2r5/8/3K4/8/8/8/8 b - - 0 1 moves c7c2 d5e5"),
+            Some(EngineMessage::Position(
+                Board::from_fen("2k5/2r5/8/3K4/8/8/8/8 b - - 0 1").unwrap(),
+                vec![
+                    Movement::from_notation("c7c2").unwrap(),
+                    Movement::from_notation("d5e5").unwrap()
+                ],
+            )),
+        );
     }
 }
