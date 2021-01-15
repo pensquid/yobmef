@@ -47,6 +47,12 @@ test!(
 );
 
 test!(
+    name: free_queen,
+    fen: "r1b1k2r/pppp1ppp/4p3/8/2nP4/2B2qP1/P1P1KP1P/RQ6 w kq - 1 2",
+    want: "e2f3",
+);
+
+test!(
     name: mate_1_white,
     fen: "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4",
     want: "h5f7",

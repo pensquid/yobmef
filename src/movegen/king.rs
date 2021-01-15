@@ -56,7 +56,6 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
     let our_pieces = *board.color_combined(color);
     let their_pieces = *board.color_combined(color.other());
     let king = *board.pieces(Piece::King) & our_pieces;
-    let pieces_mask = !(our_pieces | their_pieces);
 
     for from_sq_index in 0..64 {
         let from_sq = Square(from_sq_index);
@@ -65,7 +64,7 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
             continue;
         }
 
-        let moves_bitboard = king_moves(from_sq) & pieces_mask;
+        let moves_bitboard = king_moves(from_sq) & !our_pieces;
 
         for to_sq_index in 0..64 {
             let to_sq = Square(to_sq_index);
@@ -117,5 +116,12 @@ mod tests {
     fn test_gen_king_moves_bottomright() {
         let board = Board::from_fen("8/8/4k3/4n3/8/6N1/8/7K w - - 0 1").unwrap();
         moves_test(&board, "h1h2 h1g1 h1g2", "h1a1 h1h8 h1a8");
+    }
+
+    #[test]
+    fn test_king_takes_queen() {
+        let board =
+            Board::from_fen("r1b1k2r/pppp1ppp/4p3/8/2nP4/2B2qP1/P1P1KP1P/RQ6 w kq - 1 2").unwrap();
+        moves_test(&board, "e2f3", "");
     }
 }
