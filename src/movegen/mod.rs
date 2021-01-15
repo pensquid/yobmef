@@ -1,5 +1,5 @@
 use crate::bitboard::BitBoard;
-use crate::chess::{Board, Color, Movement, Piece};
+use crate::chess::{Board, Movement};
 
 mod helpers;
 mod king;
@@ -46,7 +46,7 @@ pub fn get_legal_moves(board: &Board) -> Vec<Movement> {
 #[cfg(test)]
 mod tests {
     use crate::chess::Board;
-    use super::helpers::assert_moves;
+    use super::{helpers::assert_moves};
 
     #[test]
     fn test_move_into_check() {
