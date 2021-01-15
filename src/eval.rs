@@ -67,6 +67,9 @@ fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
         .sum()
 }
 
+// Not i16::MAX, because we use i16::MAX as infinity, ie.
+// we want best move updated from None -> Some(mv) even if
+// the best move still results in our demise.
 pub const MATE: i16 = 10000;
 
 fn get_score_for_color(board: &Board, color: Color) -> i16 {
