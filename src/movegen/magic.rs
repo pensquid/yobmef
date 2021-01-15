@@ -154,7 +154,7 @@ fn get_sliding_moves_bb(sq: Square, piece: Piece, occupancy: &BitBoard) -> BitBo
 pub fn get_sliding_attacks(board: &Board, color: Color) -> BitBoard {
     let mut attacks = BitBoard::empty();
 
-    let all_pieces = board.color_combined_both();
+    let all_pieces = board.combined();
     let my_pieces = *board.color_combined(color);
 
     let my_queens = *board.pieces(Piece::Queen) & my_pieces;
@@ -176,7 +176,7 @@ pub fn get_sliding_attacks(board: &Board, color: Color) -> BitBoard {
 }
 
 pub fn get_sliding_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
-    let all_pieces = board.color_combined_both();
+    let all_pieces = board.combined();
     let my_pieces = *board.color_combined(color);
 
     let my_queens = *board.pieces(Piece::Queen) & my_pieces;

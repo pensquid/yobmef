@@ -74,7 +74,7 @@ pub fn gen_pawn_moves() {
 pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
     // We need bitwise not because we want the mask to cancel when
     // a piece *IS* there, not when it isn't
-    let all_pieces = !board.color_combined_both();
+    let all_pieces = !board.combined();
     let my_pawns = *board.pieces(Piece::Pawn) & *board.color_combined(color);
 
     let mut their_pieces = board.color_combined(color.other()).clone();

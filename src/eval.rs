@@ -1,4 +1,4 @@
-use crate::chess::{Board, Color, GameStatus, Piece, Square};
+use crate::chess::{Board, Color, Piece, Square};
 
 // SHITTY SHIT HERE, JUST FOR EXPERIMENTATION, NOT FOR USE IN FINAL PROGRAM
 // Inspiration from:
@@ -84,21 +84,18 @@ pub fn get_score_ongoing(board: &Board) -> i16 {
     get_score_for_color(board, Color::White) - get_score_for_color(&board, Color::Black)
 }
 
-pub fn get_score(board: &Board) -> i16 {
-    match board.status() {
-        GameStatus::Ongoing => get_score_ongoing(board),
-        GameStatus::Draw => 0,
-        GameStatus::Win(color) => match color {
-            Color::White => MATE,
-            Color::Black => -MATE,
-        },
-    }
+pub fn get_score(board: &Board, legal_move_count: usize) -> i16 {
+    if legal_move_count == 0 && board.in_check() {
+        MATE * board.side_to_move.other().polarize()
+    } else if legal_move_count > 0 {
+        get_score_ongoing(board)
+    } else { 0 }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::chess::Movement;
+    use crate::{chess::Movement, movegen};
     use crate::movegen::gen_moves_once;
 
     #[test]
@@ -108,7 +105,7 @@ mod tests {
         let mut b = Board::from_start_pos();
         b.make_move_mut(&Movement::from_notation("e2e4").expect("e2e4 move is valid"));
 
-        let score = get_score(&b);
+        let score = get_score(&b, movegen::get_legal_moves(&b).len());
         eprintln!("score: {}", score);
         assert!(score > 0); // White should have the advantage
     }
@@ -118,9 +115,9 @@ mod tests {
         gen_moves_once();
 
         let b =
-            Board::from_fen("r1b1kb1r/pppp1pp1/2n5/1B2p3/4PP2/6p1/PPPP2Pq/RNBQNRK1 b kq f3 0 8")
+            Board::from_fen("r1b1kb1r/pppp1pp1/2n5/1B2p3/4PP2/6p1/PPPP2Pq/RNBQNRK1 w kq f3 0 8")
                 .unwrap();
-        let score = get_score(&b);
+        let score = get_score(&b, movegen::get_legal_moves(&b).len());
 
         eprintln!("board:\n{}", b);
         eprintln!("score (white in checkmate) = {}", score);
@@ -132,8 +129,7 @@ mod tests {
         gen_moves_once();
 
         let b = Board::from_fen("k1R5/8/1K6/8/8/8/8/8 b - - 0 1").unwrap();
-        assert_eq!(b.status(), GameStatus::Win(Color::White));
-        let score = get_score(&b);
+        let score = get_score(&b, movegen::get_legal_moves(&b).len());
 
         eprintln!("board:\n{}", b);
         eprintln!("score (black in checkmate) = {}", score);
