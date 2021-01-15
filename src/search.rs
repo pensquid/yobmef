@@ -43,7 +43,7 @@ impl Searcher {
         }
 
         // (This will be replaced with iterative deepening later)
-        let depth = 3;
+        let depth = 5;
 
         let turn = board.side_to_move.polarize();
         let white = board.side_to_move == Color::White;
