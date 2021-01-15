@@ -94,11 +94,8 @@ test! (
     want: "c4e5",
 );
 
-// Does not pass, either I have a bug or vannila minimax is not strong enough
-// to find it. alphabeta should though.
-// test!(
-//     name: mate_3_fishing_pole,
-//     fen: "r1b1kb1r/pppp1pp1/2n5/1B2p3/4PPpq/8/PPPP2P1/RNBQNRK1 b kq f3 0 8",
-//     want: "g4g3",
-//     // eval: -eval::MATE, // TODO Add eval to test! macro
-// );
+test!(
+    name: mate_3_fishing_pole,
+    fen: "r1b1kb1r/pppp1pp1/2n5/1B2p3/4PPpq/8/PPPP2P1/RNBQNRK1 b kq f3 0 8",
+    want: "g4g3",
+);
