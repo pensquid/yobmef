@@ -43,7 +43,7 @@ impl Searcher {
         }
 
         // (This will be replaced with iterative deepening later)
-        let depth = 5;
+        let depth = 3;
 
         let turn = board.side_to_move.polarize();
         let white = board.side_to_move == Color::White;
@@ -53,7 +53,7 @@ impl Searcher {
         let mut best_score = -eval::MATE * turn; // start with worst score
 
         for mv in moves {
-            let score = self.alphabeta(&board.make_move(&mv), depth - 1);
+            let score = self.alphabeta(&board.make_move(&mv), depth - 1, i16::MIN, i16::MAX);
             if better(&score, &best_score) || best_move.is_none() {
                 best_score = score;
                 best_move = Some(mv);
@@ -66,8 +66,7 @@ impl Searcher {
         }
     }
 
-    // TODO: Add prune (currently just minimax)
-    pub fn alphabeta(&self, board: &Board, depth: u16) -> i16 {
+    pub fn alphabeta(&self, board: &Board, depth: u16, mut alpha: i16, mut beta: i16) -> i16 {
         let moves = get_sorted_moves(board);
         let is_game_over = moves.len() == 0;
 
@@ -78,25 +77,30 @@ impl Searcher {
         let mut best;
 
         // This is ugly, normally I would use higher order functions
-        // but once you add alphabeta pruning its hard to abstract.
-        // Also, maybe this shouldn't be an associated method with Engine.
+        // but this is easier to follow.
 
         if board.side_to_move == Color::White {
             best = -eval::MATE;
 
             for mv in moves {
-                let score = self.alphabeta(&board.make_move(&mv), depth - 1);
-                if score > best {
-                    best = score;
+                let score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
+                best = i16::max(best, score);
+
+                alpha = i16::max(alpha, score);
+                if beta <= alpha {
+                    break;
                 }
             }
         } else {
             best = eval::MATE;
 
             for mv in moves {
-                let score = self.alphabeta(&board.make_move(&mv), depth - 1);
-                if score < best {
-                    best = score;
+                let score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
+                best = i16::min(best, score);
+
+                beta = i16::min(beta, score);
+                if beta <= alpha {
+                    break;
                 }
             }
         }
