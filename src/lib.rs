@@ -57,7 +57,7 @@ impl Engine {
 
         // This is ugly, normally I would use higher order functions
         // but once you add alphabeta pruning its hard to abstract.
-        // Also, maybe this shoulden't be an associated method with Engine.
+        // Also, maybe this shouldn't be an associated method with Engine.
 
         if board.side_to_move == Color::White {
             best = -eval::MATE;

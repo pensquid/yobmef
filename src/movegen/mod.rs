@@ -17,7 +17,7 @@ pub fn gen_moves_once() {
     });
 }
 
-pub fn gen_moves() {
+fn gen_moves() {
     pawn::gen_pawn_moves();
     knight::gen_knight_moves();
     king::gen_king_moves();
