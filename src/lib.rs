@@ -1,4 +1,5 @@
 use chess::{Board, Color, Movement};
+use search::{SearchResult, Searcher};
 use std::io;
 use uci::EngineMessage;
 
@@ -6,21 +7,20 @@ pub mod bitboard;
 pub mod chess;
 pub mod eval;
 pub mod movegen;
+pub mod search;
 pub mod uci;
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct SearchResult {
-    pub eval: i16,            // evaluation for the position
-    pub mv: Option<Movement>, // the best move
-}
 
 pub struct Engine {
     position: Option<Board>,
+    searcher: Searcher,
 }
 
 impl Engine {
     pub fn new() -> Engine {
-        Engine { position: None }
+        Engine {
+            position: None,
+            searcher: Searcher::new(),
+        }
     }
 
     pub fn uci_loop(&mut self) -> io::Result<()> {
@@ -42,101 +42,22 @@ impl Engine {
         Ok(())
     }
 
-    // TODO: Add prune (currently just minimax)
-    fn alphabeta(board: &Board, depth: u16) -> i16 {
-        if depth == 0 || board.game_over() {
-            if board.game_over() {
-                eprintln!("game over {:?}\n{}", board.status(), board);
+    fn go(&self, opts: uci::Go) {
+        match &self.position {
+            None => {
+                eprintln!("No position specified");
             }
-            return eval::get_score(board);
-        }
 
-        let moves = movegen::get_legal_moves(board); // TODO: Sort improves pruning
+            Some(board) => {
+                // let score = eval::get_score(&board);
+                let search_result = self.searcher.search(&board);
 
-        let mut best;
+                println!("info score cp {}", search_result.eval);
 
-        // This is ugly, normally I would use higher order functions
-        // but once you add alphabeta pruning its hard to abstract.
-        // Also, maybe this shouldn't be an associated method with Engine.
-
-        if board.side_to_move == Color::White {
-            best = -eval::MATE;
-
-            for mv in moves {
-                let score = Self::alphabeta(&board.make_move(&mv), depth - 1);
-                if score > best {
-                    best = score;
-                }
-            }
-        } else {
-            best = eval::MATE;
-
-            for mv in moves {
-                let score = Self::alphabeta(&board.make_move(&mv), depth - 1);
-                if score < best {
-                    best = score;
-                }
+                // will only fail at unwrap if board is gameover I think
+                println!("bestmove {}", search_result.mv.unwrap());
             }
         }
-
-        best
-    }
-
-    // TODO: Transposition table
-    // TODO: Quiet search
-    // TODO: Iterative deepening (stop when uci 'stop' is sent)
-    fn search(board: &Board) -> SearchResult {
-        if board.game_over() {
-            return SearchResult {
-                eval: eval::get_score(board),
-                mv: None,
-            };
-        }
-
-        // (this will be replaced with iterative deepening later)
-        let depth = 3;
-
-        let mut moves = movegen::get_legal_moves(board);
-
-        // Sorting is very important for alpha beta search pruning
-        moves.sort_by_key(|m| eval::get_score(&board.make_move(m)));
-        if board.side_to_move == Color::White {
-            moves.reverse()
-        };
-
-        let turn = board.side_to_move.num(); // white=1, black=-1
-        let white = board.side_to_move == Color::White;
-        let better = if white { i16::gt } else { i16::lt };
-
-        let mut best_move = None;
-        let mut best_score = -eval::MATE * turn; // start with worst score
-
-        for mv in moves {
-            let score = Self::alphabeta(&board.make_move(&mv), depth - 1);
-            if better(&score, &best_score) || best_move.is_none() {
-                // eprintln!(
-                //     "{}({:?}) better then {}({:?}) for {:?}",
-                //     score, mv, best_score, best_move, board.side_to_move
-                // );
-                best_score = score;
-                best_move = Some(mv);
-            }
-        }
-
-        SearchResult {
-            eval: best_score,
-            mv: best_move,
-        }
-    }
-
-    fn go(board: &Board) {
-        // let score = eval::get_score(&board);
-        let search_result = Self::search(board);
-
-        println!("info score cp {}", search_result.eval);
-
-        // will only fail at unwrap if board is gameover I think
-        println!("bestmove {}", search_result.mv.unwrap());
     }
 
     fn handle(&mut self, msg: uci::EngineMessage) {
@@ -158,13 +79,7 @@ impl Engine {
                 self.position = Some(board);
             }
 
-            EngineMessage::Go(_) => {
-                if let Some(board) = &self.position {
-                    Self::go(board);
-                } else {
-                    eprintln!("No position specified");
-                }
-            }
+            EngineMessage::Go(opts) => self.go(opts),
 
             _ => {}
         }
@@ -201,12 +116,27 @@ mod tests {
 
     use crate::movegen::gen_moves_once;
 
+    // search in tests (with fresh searcher)
+    fn search(board: &Board) -> SearchResult {
+        // For when I implement threading for searcher.
+        // use std::time::Duration;
+
+        // let mut searcher = Searcher::new();
+        // searcher.start(board);
+        // std::thread::sleep(Duration::from_millis(100));
+
+        // return searcher.stop();
+
+        let mut searcher = Searcher::new();
+        searcher.search(board)
+    }
+
     #[test]
     fn knight_fork() {
         gen_moves_once();
         let fen = "8/3k4/1p4r1/8/2N5/8/8/K7 w - - 0 1";
         let board = Board::from_fen(fen).unwrap();
-        let search_result = Engine::search(&board);
+        let search_result = search(&board);
         assert_eq!(search_result.mv, Movement::from_notation("c4e5"));
         assert!(search_result.eval > 0);
     }
@@ -216,7 +146,7 @@ mod tests {
         gen_moves_once();
         let fen = "8/3K4/1P4Q1/8/2n5/8/8/k7 b - - 0 1";
         let board = Board::from_fen(fen).unwrap();
-        let search_result = Engine::search(&board);
+        let search_result = search(&board);
         assert_eq!(search_result.mv, Movement::from_notation("c4e5"));
         assert!(search_result.eval < 0);
     }
