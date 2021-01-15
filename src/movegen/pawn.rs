@@ -134,7 +134,6 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

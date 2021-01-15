@@ -6,7 +6,7 @@ use super::magic_utils::{
 };
 
 use crate::bitboard::BitBoard;
-use crate::chess::{Board, Movement, Piece, Square, Color};
+use crate::chess::{Board, Color, Movement, Piece, Square};
 
 static mut MOVES: [BitBoard; NUM_MOVES] = [BitBoard::empty(); NUM_MOVES];
 static mut ROOK_MAGICS: [MagicSquare; 64] = [MagicSquare::empty(); 64];

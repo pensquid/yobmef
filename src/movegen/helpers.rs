@@ -128,4 +128,3 @@ fn hash(mv: &Movement) -> u64 {
     mv.hash(&mut hasher);
     hasher.finish()
 }
-

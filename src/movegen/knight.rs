@@ -1,6 +1,6 @@
 use super::helpers::{NOT_AB_FILE, NOT_A_FILE, NOT_GH_FILE, NOT_H_FILE};
-use crate::{bitboard::BitBoard, chess::Color};
 use crate::chess::{Board, Movement, Piece, Square};
+use crate::{bitboard::BitBoard, chess::Color};
 
 static mut KNIGHT_MOVES: [BitBoard; 64] = [BitBoard::empty(); 64];
 
