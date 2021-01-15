@@ -5,6 +5,7 @@ use yobmef::{
 };
 
 // TODO: Optional parameter for what range the evaluation should be in
+// TODO: Remove duplication
 
 macro_rules! test {
     (name: $name:ident, fen: $fen:expr, want: $want:expr,) => {
@@ -17,10 +18,33 @@ macro_rules! test {
             let search_result = searcher.search(&board);
             let got = search_result.mv.unwrap();
             let want = Movement::from_notation($want).unwrap();
+            eprintln!("bestmove {} eval {}", got, search_result.eval);
             assert_eq!(want, got, "want {} got {}", want, got);
         }
     };
+
+    (name: $name:ident, fen: $fen:expr, not: $not:expr,) => {
+        #[test]
+        fn $name() {
+            gen_moves_once();
+
+            let board = Board::from_fen($fen).expect("fen should be valid");
+            let searcher = Searcher::new();
+            let search_result = searcher.search(&board);
+            let got = search_result.mv.unwrap();
+            let not = Movement::from_notation($not).unwrap();
+            eprintln!("bestmove {} eval {}", got, search_result.eval);
+            assert_ne!(not, got, "got {} want something else", got);
+        }
+    };
 }
+
+// todo: not test (don't play this move), for mistakes it has made in the past.
+test!(
+    name: queen_blunder_check,
+    fen: "r1b1k2r/pppp1ppp/4p3/8/2nP4/2B3P1/P1P1KP1P/RQ5q b kq - 0 1",
+    not: "h1f3",
+);
 
 test!(
     name: mate_1_white,
