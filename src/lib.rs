@@ -60,7 +60,7 @@ impl Engine {
                     let score = analyze::get_score(&board);
                     println!("info score cp {}", score);
 
-                    let moves = movegen::get_moves(&board);
+                    let moves = movegen::get_legal_moves(&board);
                     let mut sorted_moves = Vec::new();
                     moves.iter().for_each(|m| sorted_moves.push(m));
                     sorted_moves.sort_by_key(|m| analyze::get_score(&board.make_move(m)));

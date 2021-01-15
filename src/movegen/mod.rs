@@ -1,4 +1,5 @@
-use crate::chess::{Board, Movement};
+use crate::bitboard::BitBoard;
+use crate::chess::{Board, Color, Movement, Piece};
 
 mod helpers;
 mod king;
@@ -7,6 +8,7 @@ mod magic;
 mod magic_utils;
 mod pawn;
 
+
 pub fn gen_moves() {
     pawn::gen_pawn_moves();
     knight::gen_knight_moves();
@@ -14,48 +16,63 @@ pub fn gen_moves() {
     magic::gen_all_magics();
 }
 
-pub fn get_moves(board: &Board) -> Vec<Movement> {
+pub fn get_pseudolegal_moves(board: &Board) -> Vec<Movement> {
     let mut moves = Vec::new();
-    pawn::get_pawn_moves(board, &mut moves);
-    knight::get_knight_moves(board, &mut moves);
-    king::get_king_moves(board, &mut moves);
-    magic::get_sliding_moves(board, &mut moves);
+    pawn::get_pawn_moves(board, &mut moves, board.side_to_move);
+    knight::get_knight_moves(board, &mut moves, board.side_to_move);
+    king::get_king_moves(board, &mut moves, board.side_to_move);
+    magic::get_sliding_moves(board, &mut moves, board.side_to_move);
     moves
+}
+
+pub fn get_legal_moves(board: &Board) -> Vec<Movement> {
+    let pseudolegal = get_pseudolegal_moves(board);
+
+    pseudolegal.into_iter().filter(|mv| {
+        let after_move = board.make_move(mv);
+
+        let mut attacks = BitBoard::empty();
+        attacks |= pawn::get_pawn_attacks(&after_move, after_move.side_to_move);
+        attacks |= knight::get_knight_attacks(&after_move, after_move.side_to_move);
+        attacks |= king::get_king_attacks(&after_move, after_move.side_to_move);
+        attacks |= magic::get_sliding_attacks(&after_move, after_move.side_to_move);
+
+        let only_our_king = 1 << after_move.king(board.side_to_move).0;
+        let is_in_check = (attacks.0 & only_our_king).count_ones() > 0;
+        !is_in_check
+    }).collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::helpers::*;
-    use super::*;
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
+    use crate::chess::Board;
+    use super::helpers::assert_moves;
 
-    fn vec_moves(moves_str: &str) -> Vec<Movement> {
-        let mut moves = Vec::new();
-        for lan in moves_str.split(' ') {
-            moves.push(Movement::from_notation(lan).unwrap())
-        }
-        moves
+    #[test]
+    fn test_move_into_check() {
+        let board = Board::from_fen("K7/2k5/8/8/8/8/8/8 w - - 0 1").unwrap();
+        assert_moves(&board, "a8a7");
+
+        let board = Board::from_fen("7k/8/5P2/6K1/8/8/8/8 b - - 0 1").unwrap();
+        assert_moves(&board, "h8h7 h8g8");
     }
 
-    fn hash(mv: &Movement) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        mv.hash(&mut hasher);
-        hasher.finish()
+    #[test]
+    fn test_move_in_check() {
+        let board = Board::from_fen("7K/6b1/6k1/8/8/8/8/8 w - - 0 1").unwrap();
+        assert_moves(&board, "h8g8");
     }
 
-    fn assert_moves(board: &Board, moves: &str) {
-        let mut want_moves = vec_moves(moves);
-        let mut got_moves = get_moves(board);
-        want_moves.sort_by_key(|m| hash(m));
-        got_moves.sort_by_key(|m| hash(m));
+    #[test]
+    fn test_block_check_knight() {
+        let board = Board::from_fen("3K4/8/6k1/3N2b1/8/8/8/8 w - - 0 1").unwrap();
+        assert_moves(&board, "d5e7 d5f6 d8d7 d8e8 d8c8 d8c7");
+    }
 
-        if want_moves != got_moves {
-            eprintln!("{:?} to move\n{}", board.side_to_move, board);
-            eprintln!("got legal: {}", moves_to_str(&got_moves));
-            eprintln!("want legal: {}", moves_to_str(&want_moves));
-            panic!("move vectors don't match");
-        }
+    #[test]
+    fn test_block_check_double_pawn_push() {
+        let board = Board::from_fen("8/2r5/6k1/6r1/3K2r1/6r1/4P3/8 w - - 0 1").unwrap();
+        assert_moves(&board, "e2e4");
     }
 
     #[test]

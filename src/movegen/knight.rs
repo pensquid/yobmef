@@ -1,5 +1,5 @@
 use super::helpers::{NOT_AB_FILE, NOT_A_FILE, NOT_GH_FILE, NOT_H_FILE};
-use crate::bitboard::BitBoard;
+use crate::{bitboard::BitBoard, chess::Color};
 use crate::chess::{Board, Movement, Piece, Square};
 
 static mut KNIGHT_MOVES: [BitBoard; 64] = [BitBoard::empty(); 64];
@@ -28,8 +28,25 @@ pub fn gen_knight_moves() {
     }
 }
 
-pub fn get_knight_moves(board: &Board, moves: &mut Vec<Movement>) {
-    let my_pieces = *board.color_combined(board.side_to_move);
+pub fn get_knight_attacks(board: &Board, color: Color) -> BitBoard {
+    let mut attacks = BitBoard::empty();
+
+    let my_pieces = *board.color_combined(color);
+    let my_knights = *board.pieces(Piece::Knight) & my_pieces;
+
+    for from_sq_index in 0..64 {
+        let from_sq = Square(from_sq_index);
+        if !my_knights.get(from_sq) {
+            continue;
+        }
+        attacks |= knight_moves(from_sq);
+    }
+
+    attacks
+}
+
+pub fn get_knight_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
+    let my_pieces = *board.color_combined(color);
     let my_knights = *board.pieces(Piece::Knight) & my_pieces;
     let move_locations = !my_pieces;
 
@@ -69,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_get_knight_moves_other_directions() {
-        let mut board = Board::from_fen("b6k/7K/8/2N5/4n3/8/8/4B3 w - - 0 1").unwrap();
+        let mut board = Board::from_fen("b6k/8/7K/2N5/4n3/8/8/4B3 w - - 0 1").unwrap();
 
         moves_test(&board, "c5b7 c5a6 c5a4 c5b3 c5d3 c5e4 c5e6 c5d7", "");
 

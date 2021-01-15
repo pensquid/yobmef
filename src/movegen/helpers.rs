@@ -1,10 +1,12 @@
 #![allow(dead_code)]
-use super::{gen_moves, get_moves};
+use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}, sync::Once};
+
+use super::{gen_moves, get_legal_moves};
 use crate::{
     bitboard::BitBoard,
     chess::{Board, Movement, Square},
 };
-use std::sync::Once;
+// use std::sync::Once;
 
 // <3 kognise
 // We could inline shifts of the different files but this is more readable
@@ -49,10 +51,8 @@ pub fn moves_to_str(moves: &Vec<Movement>) -> String {
 static START: Once = Once::new();
 
 pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
-    START.call_once(|| {
-        gen_moves();
-    });
-    let moves = get_moves(&board);
+    START.call_once(|| { gen_moves(); });
+    let moves = get_legal_moves(&board);
 
     let legal_str = moves_to_str(&moves);
 
@@ -97,4 +97,34 @@ pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
             }
         }
     }
+}
+
+pub fn assert_moves(board: &Board, moves: &str) {
+    START.call_once(|| { gen_moves(); });
+
+    let mut want_moves = vec_moves(moves);
+    let mut got_moves = get_legal_moves(board);
+    want_moves.sort_by_key(|m| hash(m));
+    got_moves.sort_by_key(|m| hash(m));
+
+    if want_moves != got_moves {
+        eprintln!("{:?} to move\n{}", board.side_to_move, board);
+        eprintln!("got legal: {}", moves_to_str(&got_moves));
+        eprintln!("want legal: {}", moves_to_str(&want_moves));
+        panic!("move vectors don't match");
+    }
+}
+
+fn vec_moves(moves_str: &str) -> Vec<Movement> {
+    let mut moves = Vec::new();
+    for lan in moves_str.split(' ') {
+        moves.push(Movement::from_notation(lan).unwrap())
+    }
+    moves
+}
+
+fn hash(mv: &Movement) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    mv.hash(&mut hasher);
+    hasher.finish()
 }

@@ -5,7 +5,7 @@ use super::magic_utils::{
     get_occupancy_mask, get_questions_and_answers, random_bitboard, NUM_MOVES,
 };
 
-use crate::bitboard::BitBoard;
+use crate::{bitboard::BitBoard, chess::Color};
 use crate::chess::{Board, Movement, Piece, Square};
 
 static mut MOVES: [BitBoard; NUM_MOVES] = [BitBoard::empty(); NUM_MOVES];
@@ -54,16 +54,9 @@ impl MagicSquare {
             );
         }
 
-        // eprintln!("mask:\n{}", self.occupancy_mask);
-        // eprintln!("occupancy:\n{}", occupancy);
-        // eprintln!("mask & occupancy:\n{}", self.occupancy_mask & occupancy);
-
         let raw_hash = self.number * (self.occupancy_mask & occupancy);
         let shifted_hash = (raw_hash.0 as usize) >> (self.right_shift as usize);
         let hash = (self.offset as usize) + shifted_hash;
-
-        eprintln!("offset: {}", self.offset);
-        eprintln!("hash: {}", hash);
 
         unsafe { MOVES[hash] }
     }
@@ -158,9 +151,33 @@ fn get_sliding_moves_bb(sq: Square, piece: Piece, occupancy: &BitBoard) -> BitBo
     }
 }
 
-pub fn get_sliding_moves(board: &Board, moves: &mut Vec<Movement>) {
+pub fn get_sliding_attacks(board: &Board, color: Color) -> BitBoard {
+    let mut attacks = BitBoard::empty();
+
     let all_pieces = board.color_combined_both();
-    let my_pieces = *board.color_combined(board.side_to_move);
+    let my_pieces = *board.color_combined(color);
+
+    let my_queens = *board.pieces(Piece::Queen) & my_pieces;
+    let my_rooks = *board.pieces(Piece::Rook) & my_pieces;
+    let my_bishops = *board.pieces(Piece::Bishop) & my_pieces;
+
+    for from_sq_index in 0..64 {
+        let from_sq = Square(from_sq_index);
+        if my_rooks.get(from_sq) {
+            attacks |= get_sliding_moves_bb(from_sq, Piece::Rook, &all_pieces)
+        } else if my_bishops.get(from_sq) {
+            attacks |= get_sliding_moves_bb(from_sq, Piece::Bishop, &all_pieces)
+        } else if my_queens.get(from_sq) {
+            attacks |= get_sliding_moves_bb(from_sq, Piece::Queen, &all_pieces)
+        }
+    }
+
+    attacks
+}
+
+pub fn get_sliding_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
+    let all_pieces = board.color_combined_both();
+    let my_pieces = *board.color_combined(color);
 
     let my_queens = *board.pieces(Piece::Queen) & my_pieces;
     let my_rooks = *board.pieces(Piece::Rook) & my_pieces;

@@ -8,7 +8,7 @@ static mut PAWN_ATTACKS: [[BitBoard; 48]; 64] = [[BitBoard::empty(); 48]; 64];
 static mut PAWN_PUSHES: [[BitBoard; 48]; 64] = [[BitBoard::empty(); 48]; 64];
 static mut PAWN_DBL_PUSHES: [[BitBoard; 48]; 64] = [[BitBoard::empty(); 48]; 64];
 
-fn pawn_attacks(square: Square, color: Color) -> BitBoard {
+pub fn pawn_attacks(square: Square, color: Color) -> BitBoard {
     unsafe { PAWN_ATTACKS[color as usize][(square.0 - 8) as usize] }
 }
 fn pawn_pushes(square: Square, color: Color) -> BitBoard {
@@ -16,6 +16,21 @@ fn pawn_pushes(square: Square, color: Color) -> BitBoard {
 }
 fn pawn_dbl_pushes(square: Square, color: Color) -> BitBoard {
     unsafe { PAWN_DBL_PUSHES[color as usize][(square.0 - 8) as usize] }
+}
+
+pub fn get_pawn_attacks(board: &Board, color: Color) -> BitBoard {
+    let mut attacked = BitBoard::empty();
+
+    let pawns = *board.pieces(Piece::Pawn) & *board.color_combined(color);
+    // NOTE: tempting the gods with this optimization
+    for sq_index in 0..48 {
+        let sq = Square(sq_index + 8);
+        if pawns.get(sq) {
+            attacked |= pawn_attacks(sq, color);
+        }
+    }
+
+    attacked
 }
 
 pub fn gen_pawn_moves() {
@@ -56,18 +71,18 @@ pub fn gen_pawn_moves() {
     }
 }
 
-pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
+pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
     // We need bitwise not because we want the mask to cancel when
-    // a piece *IS* there, not when it isen't
+    // a piece *IS* there, not when it isn't
     let all_pieces = !board.color_combined_both();
-    let my_pawns = *board.pieces(Piece::Pawn) & *board.color_combined(board.side_to_move);
+    let my_pawns = *board.pieces(Piece::Pawn) & *board.color_combined(color);
 
-    let mut their_pieces = board.color_combined(board.side_to_move.other()).clone();
+    let mut their_pieces = board.color_combined(color.other()).clone();
     if let Some(sq) = board.en_passant {
         their_pieces.flip_mut(sq);
     }
 
-    let promotion_rank = match board.side_to_move {
+    let promotion_rank = match color {
         Color::White => 7,
         Color::Black => 0,
     };
@@ -81,18 +96,18 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
         let mut moves_bitboard = BitBoard::empty();
 
         // Attacks
-        moves_bitboard |= pawn_attacks(from_sq, board.side_to_move);
+        moves_bitboard |= pawn_attacks(from_sq, color);
         moves_bitboard &= their_pieces;
 
         // Single pushes
-        let mut pushes = pawn_pushes(from_sq, board.side_to_move).clone();
+        let mut pushes = pawn_pushes(from_sq, color).clone();
         pushes &= all_pieces;
         moves_bitboard |= pushes;
 
         // Double pushes
-        let mut dbl_pushes = pawn_dbl_pushes(from_sq, board.side_to_move).clone();
+        let mut dbl_pushes = pawn_dbl_pushes(from_sq, color).clone();
         dbl_pushes &= all_pieces;
-        dbl_pushes &= if board.side_to_move == Color::White {
+        dbl_pushes &= if color == Color::White {
             BitBoard(all_pieces.0 << 8)
         } else {
             BitBoard(all_pieces.0 >> 8)
@@ -118,6 +133,7 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>) {
         }
     }
 }
+
 
 #[cfg(test)]
 mod tests {

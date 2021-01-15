@@ -1,12 +1,26 @@
+use std::fmt;
+
 use crate::chess::Piece;
 use crate::chess::Square;
 
 // Calling it Movement and not Move because "move" is a keyword
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Movement {
     pub from_square: Square,
     pub to_square: Square,
     pub promote: Option<Piece>,
+}
+
+impl fmt::Display for Movement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_notation())
+    }
+}
+
+impl fmt::Debug for Movement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Movement({})", self.to_notation())
+    }
 }
 
 impl Movement {

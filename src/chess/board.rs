@@ -21,6 +21,8 @@ pub struct Board {
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "side to move: {:?}", self.side_to_move)?;
+
         // Go by rank, printing each row
         for rank_index in 0..8 {
             let rank_index = 7 - rank_index;
@@ -225,7 +227,6 @@ impl Board {
         board
     }
 
-    // TODO: Real error messages, not Option<T>
     pub fn make_move_mut(&mut self, movement: &Movement) -> Option<()> {
         let color = self.color_on(movement.from_square).unwrap();
 
@@ -284,6 +285,12 @@ impl Board {
 
         Some(())
     }
+
+    // TODO: Test
+    pub fn king(&self, color: Color) -> Square {
+        let king_bb = self.pieces[Piece::King as usize] & self.color_combined[color as usize];
+        Square(king_bb.0.trailing_zeros() as u8)
+    }
 }
 
 #[cfg(test)]
@@ -292,6 +299,15 @@ mod tests {
 
     fn sq(s: &str) -> Square {
         Square::from_notation(s).unwrap()
+    }
+
+    #[test]
+    fn test_get_king_square() {
+        let board = Board::from_fen("8/5k2/8/2K5/8/8/8/8 w - - 0 1").unwrap();
+        let white_king = Square::from_notation("c5").unwrap();
+        let black_king = Square::from_notation("f7").unwrap();
+        assert_eq!(board.king(Color::White), white_king);
+        assert_eq!(board.king(Color::Black), black_king);
     }
 
     #[test]

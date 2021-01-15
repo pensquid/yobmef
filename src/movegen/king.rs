@@ -30,13 +30,12 @@ pub fn gen_king_moves() {
     }
 }
 
-pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>) {
-    let our_pieces = *board.color_combined(board.side_to_move);
-    let his_pieces = *board.color_combined(board.side_to_move.other());
-    let king = *board.pieces(Piece::King) & our_pieces;
-    let pieces_mask = !(our_pieces | his_pieces);
+pub fn get_king_attacks(board: &Board, color: Color) -> BitBoard {
+    let mut attacks = BitBoard::empty();
 
-    // TODO: extract this loop into a helper (common pattern)
+    let our_pieces = *board.color_combined(color);
+    let king = *board.pieces(Piece::King) & our_pieces;
+
     for from_sq_index in 0..64 {
         let from_sq = Square(from_sq_index);
         let only_from_sq = 1 << from_sq_index;
@@ -44,7 +43,28 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>) {
             continue;
         }
 
-        // TODO Handle check (mask with attacked squares)
+        attacks |= king_moves(from_sq);
+
+        // If we have more then one king; we've got bigger problems
+        break;
+    }
+
+    attacks
+}
+
+pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
+    let our_pieces = *board.color_combined(color);
+    let their_pieces = *board.color_combined(color.other());
+    let king = *board.pieces(Piece::King) & our_pieces;
+    let pieces_mask = !(our_pieces | their_pieces);
+
+    for from_sq_index in 0..64 {
+        let from_sq = Square(from_sq_index);
+        let only_from_sq = 1 << from_sq_index;
+        if (king.0 & only_from_sq) == 0 {
+            continue;
+        }
+
         let moves_bitboard = king_moves(from_sq) & pieces_mask;
 
         for to_sq_index in 0..64 {
