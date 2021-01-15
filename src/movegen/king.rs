@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn test_gen_king_moves() {
         let board = Board::from_fen("8/8/4k3/7n/7K/6N1/8/8 w - - 0 1").unwrap();
-        moves_test(&board, "h4g5 h4g4 h4h3", "h4h5 h4g3 h4a5");
+        moves_test(&board, "h4g5 h4g4 h4h3", "h4g3 h4a5");
     }
 
     #[test]
