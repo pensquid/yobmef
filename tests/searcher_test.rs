@@ -99,3 +99,27 @@ test!(
     fen: "r1b1kb1r/pppp1pp1/2n5/1B2p3/4PPpq/8/PPPP2P1/RNBQNRK1 b kq f3 0 8",
     want: "g4g3",
 );
+
+test!(
+    name: mate_4_fishing_pole,
+    fen: "r1bqkb1r/pppp1pp1/2n5/1B2p3/4P1p1/8/PPPP1PP1/RNBQNRK1 b kq - 1 7",
+    want: "d8h4",
+);
+
+test!(
+    name: win_exchange_in_2, // 3 ply
+    fen: "2r3k1/1p3ppp/1qnBb3/2RpPp2/3P4/rP2QN2/5PPP/1R4K1 w - - 0 1",
+    want: "c5c6",
+);
+
+test!(
+    name: trap_queen_2, // 3 ply
+    fen: "r1b2r1k/1p2Npbp/p2p2p1/2n5/3N1P2/4B2P/qPQ3P1/2R2RK1 w - - 0 1",
+    want: "c1a1",
+);
+
+test!(
+    name: win_rook_in_4, // 8 ply
+    fen: "2br2k1/4pp1p/6pB/8/8/2q2P2/P1PrQ1PP/1R1R2K1 b - - 0 1",
+    want: "c3d4",
+);
