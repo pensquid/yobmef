@@ -1,4 +1,4 @@
-## yobmef
+# yobmef
 
 A bad UCI chess engine written from complete scratch in Rust
 
@@ -12,13 +12,12 @@ A bad UCI chess engine written from complete scratch in Rust
     - [x] Captures
     - [x] Promotions
     - [x] En passant
-  - [ ] Kings
+  - [x] Kings
     - [x] Moves
-    - [ ] Cannot move into check
-  - [ ] If in check, you must get out of check
+    - [x] Cannot move into check
+  - [x] If in check, you must get out of check
   - [x] Knights
   - [x] Rooks
   - [x] Bishops
   - [x] Queens
   - [ ] Castling
-
