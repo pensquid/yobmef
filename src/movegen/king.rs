@@ -54,7 +54,6 @@ pub fn get_king_attacks(board: &Board, color: Color) -> BitBoard {
 
 pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
     let our_pieces = *board.color_combined(color);
-    let their_pieces = *board.color_combined(color.other());
     let king = *board.pieces(Piece::King) & our_pieces;
 
     for from_sq_index in 0..64 {
