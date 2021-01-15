@@ -11,3 +11,6 @@ rand = "^0.8.2"
 
 [profile.test]
 opt-level = 3
+
+[profile.dev]
+opt-level = 3
