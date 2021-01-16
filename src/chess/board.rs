@@ -243,6 +243,7 @@ impl Board {
     }
 
     pub fn make_move_mut(&mut self, movement: &Movement) -> Option<()> {
+        // Crashes on moving rook after castle (castling not implemented)
         let color = self.color_on(movement.from_square).unwrap();
 
         if self.color_combined(color).get(movement.to_square) {
