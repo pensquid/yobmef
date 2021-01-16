@@ -43,14 +43,14 @@ const BISHOP_VALUE_TABLE: [i16; 64] = [
 
 #[rustfmt::skip]
 const ROOK_VALUE_TABLE: [i16; 64] = [
-    -1,  -4,  -3,   5,  4,   5,  -4,  -1,
-    -5,   0,   0,   0,  0,   0,   0,  -5,
-    -5,   0,   0,   0,  0,   0,   0,  -5,
-    -5,   0,   0,   0,  0,   0,   0,  -5,
-    -5,   0,   0,   0,  0,   0,   0,  -5,
-    -5,   0,   0,   0,  0,   0,   0,  -5,
-     5,   10,  10,  10, 10,  10,  10,  5,
-     0,   0,   0,   0,  0,   0,   0,   0,
+    -90,   0,   0,   5,  5,   0,   0,  -90,
+    -5,    0,   0,   0,  0,   0,   0,  -5,
+    -5,    0,   0,   0,  0,   0,   0,  -5,
+    -5,    0,   0,   0,  0,   0,   0,  -5,
+    -5,    0,   0,   0,  0,   0,   0,  -5,
+    -5,    0,   0,   0,  0,   0,   0,  -5,
+     5,    10,  10,  10, 10,  10,  10,  5,
+     0,    0,   0,   0,  0,   0,   0,   0,
 ];
 
 #[rustfmt::skip]
@@ -65,7 +65,17 @@ const QUEEN_VALUE_TABLE: [i16; 64] = [
     -20, -10, -10, -5, -5, -10, -10, -20,
 ];
 
-const EMPTY_VALUE_TABLE: [i16; 64] = [0; 64];
+#[rustfmt::skip]
+const KING_VALUE_TABLE_MIDDLEGAME: [i16; 64] = [
+     20,  100, 90,  0,   0,   10,  90,  20,
+     20,  20,  0,   0,   0,   0,   20,  20,
+    -10, -20, -20, -20, -20, -20, -20, -10,
+    -20, -30, -30, -40, -40, -30, -30, -20,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+];
 
 fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
     let value = match piece {
@@ -74,7 +84,7 @@ fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
         Piece::Bishop => 330,
         Piece::Rook => 500,
         Piece::Queen => 975,
-        _ => return 0,
+        Piece::King => 0,
     };
     let table = match piece {
         Piece::Pawn => PAWN_VALUE_TABLE,
@@ -82,7 +92,7 @@ fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
         Piece::Bishop => BISHOP_VALUE_TABLE,
         Piece::Rook => ROOK_VALUE_TABLE,
         Piece::Queen => QUEEN_VALUE_TABLE,
-        _ => EMPTY_VALUE_TABLE,
+        Piece::King => KING_VALUE_TABLE_MIDDLEGAME,
     };
 
     let bitboard = board.pieces(piece);
@@ -114,7 +124,7 @@ fn get_score_for_color(board: &Board, color: Color) -> i16 {
     score += get_score_for_piece(board, color, Piece::Bishop);
     score += get_score_for_piece(board, color, Piece::Rook);
     score += get_score_for_piece(board, color, Piece::Queen);
-
+    score += get_score_for_piece(board, color, Piece::King);
     score
 }
 
@@ -174,5 +184,18 @@ mod tests {
         eprintln!("board:\n{}", b);
         eprintln!("score (black in checkmate) = {}", score);
         assert_eq!(score, MATE);
+    }
+
+    #[test]
+    fn test_get_score_castle() {
+        gen_moves_once();
+
+        let mut b = Board::from_fen("rnbqkb1r/ppp2ppp/3p1n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4").unwrap();
+        let score_1 = get_score(&b, movegen::get_legal_moves(&b).len());
+        b.make_move_mut(&Movement::from_notation("e1g1").unwrap());
+        let score_2 = get_score(&b, movegen::get_legal_moves(&b).len());
+        
+        println!("{} should be > {}", score_2, score_1);
+        assert!(score_2 > score_1);
     }
 }

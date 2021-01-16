@@ -20,7 +20,7 @@ pub struct Go {
     pub black_increment: Option<u32>,
     pub moves_to_go: Option<u8>,
 
-    pub depth: Option<u8>,
+    pub depth: Option<u16>,
     pub nodes: Option<u64>,
     pub mate: Option<u8>,
 
@@ -156,7 +156,7 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
                     "binc" => go.black_increment = u32::from_str(words.next()?).ok(),
                     "movestogo" => go.moves_to_go = u8::from_str(words.next()?).ok(),
 
-                    "depth" => go.depth = u8::from_str(words.next()?).ok(),
+                    "depth" => go.depth = u16::from_str(words.next()?).ok(),
                     "nodes" => go.nodes = u64::from_str(words.next()?).ok(),
                     "mate" => go.mate = u8::from_str(words.next()?).ok(),
 

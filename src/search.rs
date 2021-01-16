@@ -32,8 +32,8 @@ impl Searcher {
 
     // TODO: Quiet search
     // TODO: Iterative deepening (stop when uci 'stop' is sent)
-    pub fn search(&self, board: &Board) -> SearchResult {
-        self.alphabeta(board, 4, i16::MIN, i16::MAX)
+    pub fn search(&self, board: &Board, depth: u16) -> SearchResult {
+        self.alphabeta(board, depth, i16::MIN, i16::MAX)
     }
 
     pub fn alphabeta(

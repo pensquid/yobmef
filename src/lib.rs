@@ -69,7 +69,7 @@ impl Engine {
             }
 
             Some(board) => {
-                let search_result = self.searcher.search(&board);
+                let search_result = self.searcher.search(&board, opts.depth.unwrap_or(4));
 
                 println!("info score cp {}", search_result.eval);
                 println!("bestmove {}", search_result.mv.unwrap());
