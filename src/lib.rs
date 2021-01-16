@@ -1,4 +1,5 @@
 use chess::Board;
+use movegen::{get_legal_moves, perft};
 use search::Searcher;
 use std::io;
 use uci::EngineMessage;
@@ -42,7 +43,26 @@ impl Engine {
         Ok(())
     }
 
-    fn go(&self, _opts: uci::Go) {
+    fn perft(&self, depth: u16) {
+        let board = &Board::from_start_pos();
+
+        let mut nodes = 0;
+        for mv in get_legal_moves(board) {
+            let n = perft(&board.make_move(&mv), depth - 1);
+            eprintln!("{}: {}", mv, n);
+            nodes += n;
+        }
+
+        eprintln!("\nNodes searched: {}", nodes);
+    }
+
+    fn go(&self, opts: uci::Go) {
+        // for debugging
+        if let Some(depth) = opts.perft {
+            self.perft(depth);
+            return;
+        }
+
         match &self.position {
             None => {
                 eprintln!("No position specified");
