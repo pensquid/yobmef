@@ -47,10 +47,14 @@ impl Searcher {
         let is_game_over = moves.len() == 0;
 
         if depth == 0 || is_game_over {
-            return SearchResult {
+            let mut sr = SearchResult {
                 eval: eval::get_score(board, moves.len()),
                 mv: None,
             };
+            if i16::abs(sr.eval) == eval::MATE {
+                sr.eval -= depth as i16;
+            }
+            return sr;
         }
 
         let mut sr = SearchResult {
