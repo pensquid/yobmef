@@ -84,7 +84,7 @@ fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
         Piece::Bishop => 330,
         Piece::Rook => 500,
         Piece::Queen => 975,
-        Piece::King => 20000,
+        Piece::King => 0,
     };
     let table = match piece {
         Piece::Pawn => PAWN_VALUE_TABLE,
