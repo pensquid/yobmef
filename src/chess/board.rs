@@ -3,14 +3,6 @@ use crate::chess::*;
 use crate::movegen;
 use std::fmt;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum CastlingSide {
-    WhiteKingside = 0,
-    WhiteQueenside = 1,
-    BlackKingside = 2,
-    BlackQueenside = 3,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Board {
     pub pieces: [BitBoard; NUM_PIECES],
@@ -236,22 +228,36 @@ impl Board {
         }
     }
 
+    // Checks for castling privileges but doesn't check square occupancy
+    pub fn can_castle_unchecked(&self, side: CastlingSide) -> bool {
+        let side_bit = side as u8;
+        (self.castling >> side_bit) & 1 == 1
+    }
+
     pub fn make_move(&self, movement: &Movement) -> Board {
         let mut board = self.clone();
         board.make_move_mut(&movement);
         board
     }
 
+    // This function WILL break if passed invalid moves
     pub fn make_move_mut(&mut self, movement: &Movement) -> Option<()> {
-        // Crashes on moving rook after castle (castling not implemented)
         let color = self.color_on(movement.from_square).unwrap();
-
-        if self.color_combined(color).get(movement.to_square) {
-            return None;
-        }
 
         // Find the piece type
         let piece = self.piece_on(movement.from_square)?;
+
+        // Handle castling, horrible, pain, aaaaa, cursed
+        let castling = CastlingSide::from_movement(movement);
+        if let Some(castling) = castling {
+            if !self.can_castle_unchecked(castling) {
+                panic!("tried to castle ({}) but cannot castle", movement);
+            }
+            self.make_move_mut(&castling.get_rook_movement());
+            CastlingSide::of_color(color)
+                .iter()
+                .for_each(|side| self.set_castling_mut(*side, false));
+        }
 
         // Move to the destination or promote
         if let Some(promoted_piece) = movement.promote {
@@ -270,7 +276,7 @@ impl Board {
             self.replace_mut(piece, movement.to_square);
         }
 
-        // Remove the piece from it's old position
+        // Remove the piece from its old position
         self.pieces[piece as usize].flip_mut(movement.from_square);
 
         // Move the piece in the color grid
@@ -469,5 +475,27 @@ mod tests {
 
         let board = Board::from_fen("k1R5/8/1K6/8/8/8/8/8 b - - 0 1").unwrap();
         assert!(board.in_check(), "black should be in check");
+    }
+
+    #[test]
+    fn test_make_move_castle() {
+        let mut board =
+            Board::from_fen("rnbqk1nr/ppp2ppp/3b4/3p4/8/3B1N2/PPPP1PPP/RNBQK2R w KQkq - 2 5")
+                .unwrap();
+        board.make_move_mut(&Movement::from_notation("e1g1").unwrap());
+
+        assert_eq!(board.piece_on(Square::from_notation("e1").unwrap()), None);
+        assert_eq!(
+            board.piece_on(Square::from_notation("f1").unwrap()),
+            Some(Piece::Rook)
+        );
+        assert_eq!(
+            board.piece_on(Square::from_notation("g1").unwrap()),
+            Some(Piece::King)
+        );
+        assert_eq!(board.piece_on(Square::from_notation("h1").unwrap()), None);
+
+        assert!(!board.can_castle_unchecked(CastlingSide::WhiteKingside));
+        assert!(!board.can_castle_unchecked(CastlingSide::WhiteKingside));
     }
 }
