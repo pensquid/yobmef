@@ -58,6 +58,19 @@ pub fn get_legal_moves(board: &Board) -> Vec<Movement> {
         .collect()
 }
 
+// For debugging, used in tests and for a debug command 'go perft depth'
+pub fn perft(board: &Board, depth: u16) -> u64 {
+    if depth == 0 {
+        return 1;
+    } else {
+        let mut n = 0;
+        for mv in get_legal_moves(board) {
+            n += perft(&board.make_move(&mv), depth - 1);
+        }
+        return n;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::helpers::assert_moves;
