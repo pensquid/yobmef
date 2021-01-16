@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 
 use super::{gen_moves_once, get_legal_moves};
 use crate::bitboard::BitBoard;
-use crate::chess::{Board, CastlingSide, Movement, Square};
+use crate::chess::{Board, Movement, Square};
 
 // We could inline shifts of the different files but this is more readable
 pub const A_FILE: u64 = 0x101010101010101;
@@ -31,15 +31,6 @@ pub const NOT_AB_FILE: u64 = !(A_FILE | B_FILE);
 pub const NOT_GH_FILE: u64 = !(G_FILE | H_FILE);
 
 pub const NOT_EDGES: u64 = !(A_FILE | H_FILE | RANK_1 | RANK_8);
-
-pub const fn get_castling_between(side: CastlingSide) -> BitBoard {
-    match side {
-        CastlingSide::WhiteKingside => BitBoard(0x6),
-        CastlingSide::WhiteQueenside => BitBoard(0x70),
-        CastlingSide::BlackKingside => BitBoard(0x600000000000000),
-        CastlingSide::BlackQueenside => BitBoard(0x7000000000000000),
-    }
-}
 
 pub fn moves_to_str(moves: &Vec<Movement>) -> String {
     let s = moves

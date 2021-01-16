@@ -1,4 +1,5 @@
 use super::{Color, Movement, Square};
+use crate::bitboard::BitBoard;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CastlingSide {
@@ -70,6 +71,24 @@ impl CastlingSide {
             CastlingSide::WhiteQueenside => Movement::new(Square(0), Square(3), None),
             CastlingSide::BlackKingside => Movement::new(Square(63), Square(61), None),
             CastlingSide::BlackQueenside => Movement::new(Square(56), Square(59), None),
+        }
+    }
+
+    pub fn get_king_movement(&self) -> Movement {
+        match self {
+            CastlingSide::WhiteKingside => Movement::new(Square(4), Square(6), None),
+            CastlingSide::WhiteQueenside => Movement::new(Square(4), Square(2), None),
+            CastlingSide::BlackKingside => Movement::new(Square(60), Square(62), None),
+            CastlingSide::BlackQueenside => Movement::new(Square(60), Square(58), None),
+        }
+    }
+
+    pub fn get_castling_middle(&self) -> BitBoard {
+        match self {
+            CastlingSide::WhiteKingside => BitBoard(0x60),
+            CastlingSide::WhiteQueenside => BitBoard(0xc),
+            CastlingSide::BlackKingside => BitBoard(0x6000000000000000),
+            CastlingSide::BlackQueenside => BitBoard(0xc00000000000000),
         }
     }
 }

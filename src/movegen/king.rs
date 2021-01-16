@@ -56,27 +56,45 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
     let our_pieces = *board.color_combined(color);
     let king = *board.pieces(Piece::King) & our_pieces;
 
-    for from_sq_index in 0..64 {
-        let from_sq = Square(from_sq_index);
-        let only_from_sq = 1 << from_sq_index;
-        if (king.0 & only_from_sq) == 0 {
+    let king_sq_index = king.0.trailing_zeros();
+    let king_sq = Square(king_sq_index as u8);
+
+    let moves_bitboard = king_moves(king_sq) & !our_pieces;
+
+    for to_sq_index in 0..64 {
+        let to_sq = Square(to_sq_index);
+        if !moves_bitboard.get(to_sq) {
             continue;
         }
 
-        let moves_bitboard = king_moves(from_sq) & !our_pieces;
+        let movement = Movement::new(king_sq, to_sq, None);
+        moves.push(movement);
+    }
 
-        for to_sq_index in 0..64 {
-            let to_sq = Square(to_sq_index);
-            if !moves_bitboard.get(to_sq) {
-                continue;
+    if !board.in_check() {
+        let attacks = super::get_attacked_squares(board, color.other());
+        let our_rooks = *board.pieces(Piece::Rook) & our_pieces;
+
+        CastlingSide::of_color(color).iter().for_each(|side| {
+            if !board.can_castle_unchecked(*side) {
+                return;
             }
+            
+            let middle = side.get_castling_middle();
+            let attacked = (attacks & middle).count_ones() > 0;
+            let blocked = (our_pieces & middle).count_ones() > 0;
 
-            let movement = Movement::new(from_sq, to_sq, None);
-            moves.push(movement);
-        }
+            // This is really bad and horrible and needs optimization
+            let king_movement = side.get_king_movement();
+            let king_placed = king_movement.from_square == king_sq;
 
-        // If we have more then one king; we've got bigger problems
-        break;
+            let rook_movement = side.get_rook_movement();
+            let rook_placed = our_rooks.get(rook_movement.from_square);
+
+            if !blocked && !attacked && king_placed && rook_placed {
+                moves.push(side.get_king_movement());
+            }
+        });
     }
 }
 
@@ -122,5 +140,29 @@ mod tests {
         let board =
             Board::from_fen("r1b1k2r/pppp1ppp/4p3/8/2nP4/2B2qP1/P1P1KP1P/RQ6 w kq - 1 2").unwrap();
         moves_test(&board, "e2f3", "");
+    }
+
+    #[test]
+    fn test_king_castling_unblocked() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1").unwrap();
+        moves_test(&board, "e1c1 e1g1", "");
+        board.side_to_move = Color::Black;
+        moves_test(&board, "e8c8 e8g8", "");
+    }
+
+    #[test]
+    fn test_king_castling_blocked() {
+        let mut board = Board::from_fen("r2pk2r/8/8/8/8/8/8/R3K1PR w KQkq - 0 1").unwrap();
+        moves_test(&board, "e1c1", "e1g1");
+        board.side_to_move = Color::Black;
+        moves_test(&board, "e8g8", "e8c8");
+    }
+
+    #[test]
+    fn test_king_castling_through_check() {
+        let mut board = Board::from_fen("r3k2r/8/8/5R2/5b2/8/8/R3K2R w KQkq - 0 1").unwrap();
+        moves_test(&board, "e1g1", "e1c1");
+        board.side_to_move = Color::Black;
+        moves_test(&board, "e8c8", "e8g8");
     }
 }

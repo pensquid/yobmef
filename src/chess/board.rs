@@ -54,7 +54,7 @@ impl Board {
     }
 
     pub fn in_check(&self) -> bool {
-        let attacked = movegen::get_attacked_squares(&self.other_side());
+        let attacked = movegen::get_attacked_squares(&self.other_side(), self.side_to_move.other());
         let our_pieces = self.color_combined(self.side_to_move);
         let our_king = *self.pieces(Piece::King) & our_pieces;
         (our_king & attacked).0 != 0
@@ -242,7 +242,9 @@ impl Board {
 
     // This function WILL break if passed invalid moves
     pub fn make_move_mut(&mut self, movement: &Movement) -> Option<()> {
-        let color = self.color_on(movement.from_square).unwrap();
+        let color = self
+            .color_on(movement.from_square)
+            .expect(&*format!("no color on square {}", movement.from_square));
 
         // Find the piece type
         let piece = self.piece_on(movement.from_square)?;
@@ -255,6 +257,7 @@ impl Board {
                     panic!("tried to castle ({}) but cannot castle", movement);
                 }
                 self.make_move_mut(&castling.get_rook_movement());
+                self.side_to_move = self.side_to_move.other();
             }
 
             CastlingSide::of_color(color)
@@ -317,6 +320,11 @@ impl Board {
     // TODO: Test
     pub fn king(&self, color: Color) -> Square {
         let king_bb = self.pieces[Piece::King as usize] & self.color_combined[color as usize];
+        
+        if !(king_bb.0.trailing_zeros() < 64) {
+            debug_assert!(king_bb.0.trailing_zeros() < 64);
+        }
+
         Square(king_bb.0.trailing_zeros() as u8)
     }
 }
@@ -507,9 +515,7 @@ mod tests {
 
     #[test]
     fn test_make_move_remove_castling() {
-        let mut board =
-            Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1")
-                .unwrap();
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1").unwrap();
 
         board.make_move_mut(&Movement::from_notation("a1a2").unwrap());
         assert!(!board.can_castle_unchecked(CastlingSide::WhiteQueenside));
