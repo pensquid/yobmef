@@ -15,7 +15,7 @@ macro_rules! test {
 
             let board = Board::from_fen($fen).expect("fen should be valid");
             let searcher = Searcher::new();
-            let search_result = searcher.search(&board);
+            let search_result = searcher.search(&board, 4);
             let got = search_result.mv.unwrap();
             let want = Movement::from_notation($want).unwrap();
             eprintln!("bestmove {} eval {}", got, search_result.eval);
@@ -30,7 +30,7 @@ macro_rules! test {
 
             let board = Board::from_fen($fen).expect("fen should be valid");
             let searcher = Searcher::new();
-            let search_result = searcher.search(&board);
+            let search_result = searcher.search(&board, 4);
             let got = search_result.mv.unwrap();
             let not = Movement::from_notation($not).unwrap();
             eprintln!("bestmove {} eval {}", got, search_result.eval);

@@ -12,21 +12,21 @@ pub enum GoVariant {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Go {
-    search_moves: Option<Vec<chess::Movement>>,
+    pub search_moves: Option<Vec<chess::Movement>>,
 
-    white_time: Option<u64>,
-    black_time: Option<u64>,
-    white_increment: Option<u32>,
-    black_increment: Option<u32>,
-    moves_to_go: Option<u8>,
+    pub white_time: Option<u64>,
+    pub black_time: Option<u64>,
+    pub white_increment: Option<u32>,
+    pub black_increment: Option<u32>,
+    pub moves_to_go: Option<u8>,
 
-    depth: Option<u8>,
-    nodes: Option<u64>,
-    mate: Option<u8>,
+    pub depth: Option<u16>,
+    pub nodes: Option<u64>,
+    pub mate: Option<u8>,
 
-    move_time: Option<u32>,
+    pub move_time: Option<u32>,
 
-    variant: GoVariant,
+    pub variant: GoVariant,
 }
 
 impl Go {
@@ -154,7 +154,7 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
                     "binc" => go.black_increment = u32::from_str(words.next()?).ok(),
                     "movestogo" => go.moves_to_go = u8::from_str(words.next()?).ok(),
 
-                    "depth" => go.depth = u8::from_str(words.next()?).ok(),
+                    "depth" => go.depth = u16::from_str(words.next()?).ok(),
                     "nodes" => go.nodes = u64::from_str(words.next()?).ok(),
                     "mate" => go.mate = u8::from_str(words.next()?).ok(),
 
