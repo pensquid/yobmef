@@ -320,7 +320,7 @@ impl Board {
     // TODO: Test
     pub fn king(&self, color: Color) -> Square {
         let king_bb = self.pieces[Piece::King as usize] & self.color_combined[color as usize];
-        
+
         if !(king_bb.0.trailing_zeros() < 64) {
             debug_assert!(king_bb.0.trailing_zeros() < 64);
         }

@@ -79,7 +79,7 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
             if !board.can_castle_unchecked(*side) {
                 return;
             }
-            
+
             let middle = side.get_castling_middle();
             let attacked = (attacks & middle).count_ones() > 0;
             let blocked = (our_pieces & middle).count_ones() > 0;

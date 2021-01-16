@@ -1,5 +1,5 @@
-use crate::{bitboard::BitBoard, chess::Color};
 use crate::chess::{Board, Movement};
+use crate::{bitboard::BitBoard, chess::Color};
 use std::sync::Once;
 
 mod helpers;
