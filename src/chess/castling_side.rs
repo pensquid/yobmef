@@ -44,6 +44,16 @@ impl CastlingSide {
         }
     }
 
+    pub fn from_rook_square(square: Square) -> Option<Self> {
+        match square {
+            Square(0) => Some(CastlingSide::WhiteQueenside),
+            Square(7) => Some(CastlingSide::WhiteKingside),
+            Square(56) => Some(CastlingSide::BlackQueenside),
+            Square(63) => Some(CastlingSide::BlackKingside),
+            _ => None,
+        }
+    }
+
     pub fn color(&self) -> Color {
         match self {
             CastlingSide::WhiteKingside => Color::White,

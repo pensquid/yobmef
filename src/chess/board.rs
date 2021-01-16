@@ -248,15 +248,21 @@ impl Board {
         let piece = self.piece_on(movement.from_square)?;
 
         // Handle castling, horrible, pain, aaaaa, cursed
-        let castling = CastlingSide::from_movement(movement);
-        if let Some(castling) = castling {
-            if !self.can_castle_unchecked(castling) {
-                panic!("tried to castle ({}) but cannot castle", movement);
+        if piece == Piece::King {
+            let castling = CastlingSide::from_movement(movement);
+            if let Some(castling) = castling {
+                if !self.can_castle_unchecked(castling) {
+                    panic!("tried to castle ({}) but cannot castle", movement);
+                }
+                self.make_move_mut(&castling.get_rook_movement());
             }
-            self.make_move_mut(&castling.get_rook_movement());
+
             CastlingSide::of_color(color)
                 .iter()
                 .for_each(|side| self.set_castling_mut(*side, false));
+        } else if piece == Piece::Rook {
+            CastlingSide::from_rook_square(movement.from_square)
+                .map(|side| self.set_castling_mut(side, false));
         }
 
         // Move to the destination or promote
@@ -496,6 +502,29 @@ mod tests {
         assert_eq!(board.piece_on(Square::from_notation("h1").unwrap()), None);
 
         assert!(!board.can_castle_unchecked(CastlingSide::WhiteKingside));
+        assert!(!board.can_castle_unchecked(CastlingSide::WhiteQueenside));
+    }
+
+    #[test]
+    fn test_make_move_remove_castling() {
+        let mut board =
+            Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1")
+                .unwrap();
+
+        board.make_move_mut(&Movement::from_notation("a1a2").unwrap());
+        assert!(!board.can_castle_unchecked(CastlingSide::WhiteQueenside));
+        assert!(board.can_castle_unchecked(CastlingSide::WhiteKingside));
+
+        board.make_move_mut(&Movement::from_notation("h8h7").unwrap());
+        assert!(!board.can_castle_unchecked(CastlingSide::BlackKingside));
+        assert!(board.can_castle_unchecked(CastlingSide::BlackQueenside));
+
+        board.make_move_mut(&Movement::from_notation("e1f2").unwrap());
         assert!(!board.can_castle_unchecked(CastlingSide::WhiteKingside));
+        assert!(!board.can_castle_unchecked(CastlingSide::WhiteQueenside));
+
+        board.make_move_mut(&Movement::from_notation("e8d7").unwrap());
+        assert!(!board.can_castle_unchecked(CastlingSide::BlackKingside));
+        assert!(!board.can_castle_unchecked(CastlingSide::BlackQueenside));
     }
 }
