@@ -64,6 +64,14 @@ test!(
     want: "h4f2",
 );
 
+// Engine did not care how long mate took, so it was not playing
+// mate as long as it had a forcing line.
+test!(
+    name: mate_1_black_does_not_care,
+    fen: "2r1kb1r/pp1npppp/8/7K/3q4/7P/P7/8 b k - 0 1",
+    want: "c8c5",
+);
+
 test!(
     name: free_knight_black,
     fen: "r1bqkbnr/pppp1ppp/2n5/4N3/4P3/8/PPPP1PPP/RNBQKB1R b KQkq - 0 3",

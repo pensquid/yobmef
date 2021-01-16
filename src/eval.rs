@@ -84,7 +84,7 @@ fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
         Piece::Bishop => 330,
         Piece::Rook => 500,
         Piece::Queen => 975,
-        Piece::King => 0,
+        _ => 0,
     };
     let table = match piece {
         Piece::Pawn => PAWN_VALUE_TABLE,
@@ -133,6 +133,8 @@ pub fn get_score_ongoing(board: &Board) -> i16 {
 }
 
 pub fn get_score(board: &Board, legal_move_count: usize) -> i16 {
+    // NOTE: Make sure eval is never more then MATE when it is checkmate,
+    // Otherwise the engine will delay mate to capture pieces.
     if legal_move_count == 0 && board.in_check() {
         MATE * board.side_to_move.other().polarize()
     } else if legal_move_count > 0 {
@@ -190,11 +192,12 @@ mod tests {
     fn test_get_score_castle() {
         gen_moves_once();
 
-        let mut b = Board::from_fen("rnbqkb1r/ppp2ppp/3p1n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4").unwrap();
+        let mut b =
+            Board::from_fen("rnbqkb1r/ppp2ppp/3p1n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4")
+                .unwrap();
         let score_1 = get_score(&b, movegen::get_legal_moves(&b).len());
         b.make_move_mut(&Movement::from_notation("e1g1").unwrap());
         let score_2 = get_score(&b, movegen::get_legal_moves(&b).len());
-        
         println!("{} should be > {}", score_2, score_1);
         assert!(score_2 > score_1);
     }

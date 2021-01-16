@@ -25,6 +25,7 @@ pub struct Go {
     pub mate: Option<u8>,
 
     pub move_time: Option<u32>,
+    pub perft: Option<u16>,
 
     pub variant: GoVariant,
 }
@@ -44,6 +45,7 @@ impl Go {
             nodes: None,
             mate: None,
 
+            perft: None,
             move_time: None,
             variant: GoVariant::Vanilla,
         }
@@ -159,6 +161,9 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
                     "mate" => go.mate = u8::from_str(words.next()?).ok(),
 
                     "movetime" => go.move_time = u32::from_str(words.next()?).ok(),
+
+                    // For debugging
+                    "perft" => go.perft = u16::from_str(words.next()?).ok(),
 
                     _ => (),
                 }
