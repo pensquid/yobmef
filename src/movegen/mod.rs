@@ -1,5 +1,5 @@
-use crate::bitboard::BitBoard;
 use crate::chess::{Board, Movement};
+use crate::{bitboard::BitBoard, chess::Color};
 use std::sync::Once;
 
 mod helpers;
@@ -33,12 +33,12 @@ pub fn get_pseudolegal_moves(board: &Board) -> Vec<Movement> {
     moves
 }
 
-pub fn get_attacked_squares(board: &Board) -> BitBoard {
+pub fn get_attacked_squares(board: &Board, color: Color) -> BitBoard {
     let mut attacks = BitBoard::empty();
-    attacks |= pawn::get_pawn_attacks(&board, board.side_to_move);
-    attacks |= knight::get_knight_attacks(&board, board.side_to_move);
-    attacks |= king::get_king_attacks(&board, board.side_to_move);
-    attacks |= magic::get_sliding_attacks(&board, board.side_to_move);
+    attacks |= pawn::get_pawn_attacks(&board, color);
+    attacks |= knight::get_knight_attacks(&board, color);
+    attacks |= king::get_king_attacks(&board, color);
+    attacks |= magic::get_sliding_attacks(&board, color);
     attacks
 }
 
@@ -49,7 +49,7 @@ pub fn get_legal_moves(board: &Board) -> Vec<Movement> {
         .into_iter()
         .filter(|mv| {
             let after_move = board.make_move(mv);
-            let attacks = get_attacked_squares(&after_move);
+            let attacks = get_attacked_squares(&after_move, board.side_to_move.other());
 
             let only_our_king = 1 << after_move.king(board.side_to_move).0;
             let is_in_check = (attacks.0 & only_our_king).count_ones() > 0;
