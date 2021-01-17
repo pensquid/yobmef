@@ -14,7 +14,7 @@ macro_rules! test {
             gen_moves_once();
 
             let board = Board::from_fen($fen).expect("fen should be valid");
-            let searcher = Searcher::new();
+            let mut searcher = Searcher::new();
             let search_result = searcher.search(&board, 4);
             let got = search_result.mv.unwrap();
             let want = Movement::from_notation($want).unwrap();
@@ -29,7 +29,7 @@ macro_rules! test {
             gen_moves_once();
 
             let board = Board::from_fen($fen).expect("fen should be valid");
-            let searcher = Searcher::new();
+            let mut searcher = Searcher::new();
             let search_result = searcher.search(&board, 4);
             let got = search_result.mv.unwrap();
             let not = Movement::from_notation($not).unwrap();

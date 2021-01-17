@@ -56,7 +56,7 @@ impl Engine {
         eprintln!("\nNodes searched: {}", nodes);
     }
 
-    fn go(&self, opts: uci::Go) {
+    fn go(&mut self, opts: uci::Go) {
         // for debugging
         if let Some(depth) = opts.perft {
             self.perft(depth);
@@ -71,7 +71,6 @@ impl Engine {
             Some(board) => {
                 let search_result = self.searcher.search(&board, opts.depth.unwrap_or(4));
 
-                println!("info score cp {}", search_result.eval);
                 println!("bestmove {}", search_result.mv.unwrap());
             }
         }

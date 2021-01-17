@@ -11,6 +11,9 @@ pub struct SearchResult {
 #[derive(Debug)]
 pub struct Searcher {
     // TODO: Transposition table
+
+    // Search statistics
+    pub nodes: u64,
 }
 
 // Sorting is very important for alpha beta search pruning
@@ -27,22 +30,30 @@ fn get_sorted_moves(board: &Board) -> Vec<Movement> {
 
 impl Searcher {
     pub fn new() -> Self {
-        Searcher {}
+        Searcher { nodes: 0 }
     }
 
     // TODO: Quiet search
     // TODO: Iterative deepening (stop when uci 'stop' is sent)
-    pub fn search(&self, board: &Board, depth: u16) -> SearchResult {
-        self.alphabeta(board, depth, i16::MIN, i16::MAX)
+    pub fn search(&mut self, board: &Board, depth: u16) -> SearchResult {
+        self.nodes = 0;
+        let sr = self.alphabeta(board, depth, i16::MIN, i16::MAX);
+        println!(
+            "info depth {} score cp {} nodes {}",
+            depth, sr.eval, self.nodes
+        );
+        return sr;
     }
 
     pub fn alphabeta(
-        &self,
+        &mut self,
         board: &Board,
         depth: u16,
         mut alpha: i16,
         mut beta: i16,
     ) -> SearchResult {
+        self.nodes += 1;
+
         let moves = get_sorted_moves(board);
         let is_game_over = moves.len() == 0;
 
