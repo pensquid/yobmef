@@ -64,4 +64,14 @@ impl Movement {
             | ((self.from_square.0 as u16) << 6)
             | (self.to_square.0 as u16)
     }
+
+    #[inline]
+    pub fn vdelta(&self) -> i8 {
+        self.to_square.rank() as i8 - self.from_square.rank() as i8
+    }
+
+    #[inline]
+    pub fn hdelta(&self) -> i8 {
+        self.to_square.file() as i8 - self.from_square.file() as i8
+    }
 }

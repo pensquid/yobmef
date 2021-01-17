@@ -84,7 +84,7 @@ fn board_from_moves(moves: &str) -> Board {
         .split(' ')
         .map(|mv| Movement::from_notation(mv).unwrap())
     {
-        board.make_move_mut(&mv).unwrap()
+        board.make_move_mut(&mv);
     }
     board
 }
