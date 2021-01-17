@@ -3,7 +3,7 @@ use crate::chess::*;
 use crate::movegen;
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Board {
     pub pieces: [BitBoard; NUM_PIECES],
     pub color_combined: [BitBoard; NUM_COLORS],
