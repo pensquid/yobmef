@@ -57,23 +57,22 @@ impl Engine {
             return;
         }
 
-        let mut depth = 4;
         let time = (match self.position.side_to_move {
             Color::White => opts.white_time,
             Color::Black => opts.black_time,
         })
         .unwrap_or(u64::MAX);
 
-        if let Some(provided_depth) = opts.depth {
-            depth = provided_depth;
+        let depth = if let Some(provided_depth) = opts.depth {
+            provided_depth
         } else if time < 6_000 {
-            depth = 3;
+            3
         } else if time < 60_000 * 5 {
-            depth = 4;
+            4
         } else {
             // depth 5 for >5m
-            depth = 5;
-        }
+            5
+        };
 
         let search_result = self.searcher.search(&self.position, depth);
 
