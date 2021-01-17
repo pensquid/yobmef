@@ -17,15 +17,13 @@ pub struct Searcher {
 }
 
 // Sorting is very important for alpha beta search pruning
-pub fn get_sorted_moves(board: &Board) -> Vec<Movement> {
-    let mut moves = movegen::get_legal_moves(board);
+pub fn sort_by_promise(board: &Board, moves: &mut Vec<Movement>) {
     let legal_move_count = moves.len();
 
     moves.sort_by_key(|m| eval::get_score(&board.make_move(m), legal_move_count));
     if board.side_to_move == Color::White {
         moves.reverse()
     };
-    moves
 }
 
 impl Searcher {
@@ -64,7 +62,7 @@ impl Searcher {
     ) -> SearchResult {
         self.nodes += 1;
 
-        let moves = get_sorted_moves(board);
+        let mut moves = movegen::get_legal_moves(board);
         let is_game_over = moves.len() == 0;
 
         if depth == 0 || is_game_over {
@@ -77,6 +75,8 @@ impl Searcher {
             }
             return sr;
         }
+
+        sort_by_promise(board, &mut moves);
 
         let mut sr = SearchResult {
             eval: -i16::MAX * board.side_to_move.polarize(),
