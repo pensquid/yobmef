@@ -100,8 +100,6 @@ impl Engine {
 mod tests {
     use super::*;
 
-    // Integration tests
-
     #[test]
     fn test_position() {
         let mut engine = Engine::new();
