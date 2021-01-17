@@ -34,21 +34,21 @@ impl Searcher {
     // TODO: Quiet search
     // TODO: This is so fucking slow without a TP table
     pub fn search(&mut self, board: &Board, start_depth: u16) -> SearchResult {
-        let mut deepest = None;
-        let mut depth = start_depth;
+        // let mut deepest = None;
         // TODO: Normally you would do time control not node count.
-        while self.nodes < 1410 || deepest.is_none() {
-            self.nodes = 0;
-            let sr = self.alphabeta(board, depth, i16::MIN, i16::MAX);
-            println!(
-                "info depth {} score cp {} nodes {}",
-                depth, sr.eval, self.nodes
-            );
-            deepest = Some(sr);
-            depth += 1;
-        }
+        // while self.nodes < 1410 || deepest.is_none() {
+        //     self.nodes = 0;
+        //     let sr = self.alphabeta(board, depth, i16::MIN, i16::MAX);
+        //     println!(
+        //         "info depth {} score cp {} nodes {}",
+        //         depth, sr.eval, self.nodes
+        //     );
+        //     deepest = Some(sr);
+        //     depth += 1;
+        // }
 
-        return deepest.unwrap();
+        // return deepest.unwrap();
+        self.alphabeta(board, start_depth, i16::MIN, i16::MAX)
     }
 
     pub fn alphabeta(
