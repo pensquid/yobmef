@@ -71,31 +71,30 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
         moves.push(movement);
     }
 
-    if !board.in_check() {
-        let attacks = super::get_attacked_squares(board, color.other());
-        let our_rooks = *board.pieces(Piece::Rook) & our_pieces;
+    let attacks = super::get_attacked_squares(board, color.other());
+    let our_rooks = *board.pieces(Piece::Rook) & our_pieces;
 
-        CastlingSide::of_color(color).iter().for_each(|side| {
-            if !board.can_castle_unchecked(*side) {
-                return;
-            }
+    CastlingSide::of_color(color).iter().for_each(|side| {
+        if !board.can_castle_unchecked(*side) {
+            return;
+        }
 
-            let middle = side.get_castling_middle();
-            let attacked = (attacks & middle).count_ones() > 0;
-            let blocked = (our_pieces & middle).count_ones() > 0;
+        let middle = side.get_castling_middle();
+        let not_attacked = side.get_castling_not_attacked();
+        let attacked = (attacks & not_attacked).count_ones() > 0;
+        let blocked = (our_pieces & middle).count_ones() > 0;
 
-            // This is really bad and horrible and needs optimization
-            let king_movement = side.get_king_movement();
-            let king_placed = king_movement.from_square == king_sq;
+        // This is really bad and horrible and needs optimization
+        let king_movement = side.get_king_movement();
+        let king_placed = king_movement.from_square == king_sq;
 
-            let rook_movement = side.get_rook_movement();
-            let rook_placed = our_rooks.get(rook_movement.from_square);
+        let rook_movement = side.get_rook_movement();
+        let rook_placed = our_rooks.get(rook_movement.from_square);
 
-            if !blocked && !attacked && king_placed && rook_placed {
-                moves.push(side.get_king_movement());
-            }
-        });
-    }
+        if !blocked && !attacked && king_placed && rook_placed {
+            moves.push(side.get_king_movement());
+        }
+    });
 }
 
 #[cfg(test)]
@@ -152,10 +151,16 @@ mod tests {
 
     #[test]
     fn test_king_castling_blocked() {
-        let mut board = Board::from_fen("r2pk2r/8/8/8/8/8/8/R3K1PR w KQkq - 0 1").unwrap();
+        let mut board = Board::from_fen("rp2k2r/8/8/8/8/8/8/R3K1PR w KQkq - 0 1").unwrap();
         moves_test(&board, "e1c1", "e1g1");
         board.side_to_move = Color::Black;
         moves_test(&board, "e8g8", "e8c8");
+    }
+
+    #[test]
+    fn test_king_castling_in_check() {
+        let board = Board::from_fen("k2n1qQ1/8/4r1b1/8/1N6/6B1/8/R3K3 w Q - 0 1").unwrap();
+        moves_test(&board, "e1d1", "e1c1");
     }
 
     #[test]

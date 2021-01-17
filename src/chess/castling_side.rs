@@ -86,9 +86,18 @@ impl CastlingSide {
     pub fn get_castling_middle(&self) -> BitBoard {
         match self {
             CastlingSide::WhiteKingside => BitBoard(0x60),
-            CastlingSide::WhiteQueenside => BitBoard(0xc),
+            CastlingSide::WhiteQueenside => BitBoard(0xe),
             CastlingSide::BlackKingside => BitBoard(0x6000000000000000),
-            CastlingSide::BlackQueenside => BitBoard(0xc00000000000000),
+            CastlingSide::BlackQueenside => BitBoard(0xe00000000000000),
+        }
+    }
+
+    pub fn get_castling_not_attacked(&self) -> BitBoard {
+        match self {
+            CastlingSide::WhiteKingside => BitBoard(0x70),
+            CastlingSide::WhiteQueenside => BitBoard(0x1c),
+            CastlingSide::BlackKingside => BitBoard(0x7000000000000000),
+            CastlingSide::BlackQueenside => BitBoard(0x1c00000000000000),
         }
     }
 }
