@@ -5,6 +5,7 @@ authors = ["Felix <felix.mattick@gmail.com>", "Ulisse Mini <ulisse.mini@gmail.co
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+default-run = "yobmef"
 
 [dependencies]
 rand = "^0.8.2"
