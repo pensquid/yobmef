@@ -9,11 +9,11 @@ fn test_perft(depth: u16, want: u64) {
     assert_eq!(
         got,
         want,
-        "perft({}) = {} want {} off by {}",
+        "perft({}) = {} want {} off by {:+}",
         depth,
         got,
         want,
-        want - got,
+        (want as i64 - got as i64),
     );
 }
 
