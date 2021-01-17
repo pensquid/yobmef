@@ -52,7 +52,7 @@ impl Searcher {
                 mv: None,
             };
             if i16::abs(sr.eval) == eval::MATE {
-                sr.eval += depth as i16;
+                sr.eval -= (depth as i16) * board.side_to_move.polarize()
             }
             return sr;
         }
