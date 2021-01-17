@@ -58,4 +58,14 @@ impl Movement {
 
         lan
     }
+
+    #[inline]
+    pub fn vdelta(&self) -> i8 {
+        self.to_square.rank() as i8 - self.from_square.rank() as i8
+    }
+
+    #[inline]
+    pub fn hdelta(&self) -> i8 {
+        self.to_square.file() as i8 - self.from_square.file() as i8
+    }
 }

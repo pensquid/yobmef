@@ -242,6 +242,8 @@ impl Board {
 
     // This function WILL break if passed invalid moves
     pub fn make_move_mut(&mut self, movement: &Movement) {
+        // TODO: Clean up using math instead of tenary conditionals.
+
         let color = self
             .color_on(movement.from_square)
             .expect(format!("no color on square {}", movement.from_square).as_str());
@@ -251,58 +253,55 @@ impl Board {
             .piece_on(movement.from_square)
             .expect(format!("no piece on {}", movement.from_square).as_str());
 
-        // Handle castling, horrible, pain, aaaaa, cursed
-        if piece == Piece::King {
-            let castling = CastlingSide::from_movement(movement);
-            if let Some(castling) = castling {
-                if !self.can_castle_unchecked(castling) {
-                    panic!("tried to castle ({}) but cannot castle", movement);
+        // Piece specific logic
+        match piece {
+            Piece::King => {
+                let castling = CastlingSide::from_movement(movement);
+                if let Some(castling) = castling {
+                    debug_assert!(
+                        self.can_castle_unchecked(castling),
+                        "tried to castle ({:?}) but cannot castle",
+                        castling,
+                    );
+                    self.make_move_mut(&castling.get_rook_movement());
+
+                    // self.make_move_mut changed the side to move, change it back!
+                    // TODO: We should really inline this, or inline a call to a helper.
+                    // Recursion here is not ideal for maintainability.
+                    self.side_to_move = self.side_to_move.other();
                 }
-                self.make_move_mut(&castling.get_rook_movement());
-                self.side_to_move = self.side_to_move.other();
+
+                // No matter what king move, we can no longer castle.
+                // TODO: Optimize using bitwise operations
+                CastlingSide::of_color(color)
+                    .iter()
+                    .for_each(|side| self.set_castling_mut(*side, false));
             }
 
-            CastlingSide::of_color(color)
-                .iter()
-                .for_each(|side| self.set_castling_mut(*side, false));
-        } else if piece == Piece::Rook {
-            CastlingSide::from_rook_square(movement.from_square)
-                .map(|side| self.set_castling_mut(side, false));
-        }
-
-        // Move to the destination or promote
-        if let Some(promoted_piece) = movement.promote {
-            if !promoted_piece.can_promote_to() {
-                return;
+            Piece::Rook => {
+                // You can no longer castle on this side after moving your rook.
+                CastlingSide::from_rook_square(movement.from_square)
+                    .map(|side| self.set_castling_mut(side, false));
             }
-            self.replace_mut(promoted_piece, movement.to_square);
-        } else if piece == Piece::Pawn && self.en_passant == Some(movement.to_square) {
-            self.replace_mut(piece, movement.to_square);
-            self.remove_mut(if self.side_to_move == Color::White {
-                movement.to_square.down(1).unwrap()
-            } else {
-                movement.to_square.up(1).unwrap()
-            });
-        } else {
-            self.replace_mut(piece, movement.to_square);
+
+            Piece::Pawn => {
+                if self.en_passant == Some(movement.to_square) {
+                    // Remove the captured pawn
+                    self.remove_mut(if self.side_to_move == Color::White {
+                        movement.to_square.down(1).unwrap()
+                    } else {
+                        movement.to_square.up(1).unwrap()
+                    });
+                }
+            }
+
+            _ => {}
         }
-
-        // Remove the piece from its old position
-        self.pieces[piece as usize].flip_mut(movement.from_square);
-
-        // Move the piece in the color grid
-        self.color_combined[color as usize].flip_mut(movement.from_square);
-        self.color_combined[color as usize].flip_mut(movement.to_square);
 
         // Store en passant passing square
-        let is_double_move = piece == Piece::Pawn
-            && if color == Color::White {
-                movement.to_square.rank() - movement.from_square.rank() == 2
-            } else {
-                movement.from_square.rank() - movement.to_square.rank() == 2
-            };
+        let is_double_move = piece == Piece::Pawn && i8::abs(movement.vdelta()) == 2;
 
-        if piece == Piece::Pawn && is_double_move {
+        if is_double_move {
             let passing_square = if color == Color::White {
                 movement.to_square.down(1).unwrap()
             } else {
@@ -310,8 +309,26 @@ impl Board {
             };
             self.en_passant = Some(passing_square)
         } else {
+            // If a move is made which does not create an en_passant square,
+            // we remove the en_passant square (en_passant is valid for one move only)
             self.en_passant = None;
         }
+
+        // NOTE: Not checking rank is ok! this function is undefined for invalid moves. <o/
+        if let Some(promotion) = movement.promote {
+            self.replace_mut(promotion, movement.to_square);
+        } else {
+            self.replace_mut(piece, movement.to_square);
+        }
+
+        // Piece independent logic
+
+        // Remove the piece from its old position
+        self.pieces[piece as usize].flip_mut(movement.from_square);
+
+        // Move the piece in the color grid
+        self.color_combined[color as usize].flip_mut(movement.from_square);
+        self.color_combined[color as usize].flip_mut(movement.to_square);
 
         // Switch side to move
         self.side_to_move = self.side_to_move.other();
@@ -547,5 +564,18 @@ mod tests {
 
         assert_eq!(on_a5, Some(Piece::Pawn));
         assert_eq!(on_a6, Some(Piece::Bishop));
+    }
+
+    #[test]
+    fn test_make_move_en_passant_cleared() {
+        // en-passant should be cleared every move.
+        let mut board = Board::from_start_pos();
+        board.make_move_mut(&Movement::from_notation("e2e4").unwrap());
+        assert_eq!(board.en_passant, Some(Square::from_notation("e3").unwrap()));
+
+        // Knight move is a better test if the pawn function clears en-passant,
+        // it would hide on another pawn move.
+        board.make_move_mut(&Movement::from_notation("g8f6").unwrap());
+        assert_eq!(board.en_passant, None);
     }
 }
