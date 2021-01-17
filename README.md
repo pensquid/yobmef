@@ -6,7 +6,10 @@ A bad UCI chess engine written from complete scratch in Rust
 
 - [x] Factor `Square`, `Piece`, `Color`, `Movement` and `Board` to separate files
 - [ ] Add UCI tests
-- [ ] Finish movegen
+- [ ] Optimize pruning
+- [ ] Transposition tables
+  - [x] Zobrist hashing
+- [x] Finish movegen
   - [x] Pawns
     - [x] Pushing
     - [x] Captures
@@ -20,4 +23,4 @@ A bad UCI chess engine written from complete scratch in Rust
   - [x] Rooks
   - [x] Bishops
   - [x] Queens
-  - [ ] Castling
+  - [x] Castling
