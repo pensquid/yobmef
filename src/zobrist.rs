@@ -48,3 +48,45 @@ pub fn hash(board: &Board) -> u64 {
 
     hash.0
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::chess::Board;
+    use crate::movegen::{gen_moves_once, get_legal_moves};
+    use std::collections::HashMap;
+
+    fn test_zobrist_collisions_hashmap(s: &mut HashMap<u64, Board>, depth: u16, board: &Board) {
+        if depth == 0 {
+            return;
+        }
+
+        for mv in get_legal_moves(board) {
+            let h = hash(board);
+            let previous = s.insert(h, board.clone());
+            if let Some(previous) = &previous {
+                if previous != board {
+                    eprintln!("previous:\n{}\ncurrent:\n{}\n", previous, board);
+                    eprintln!(
+                        "prev enp: {:?} curr enp {:?}",
+                        previous.en_passant, board.en_passant
+                    );
+                    panic!("hash collision! {}", h);
+                }
+            }
+
+            test_zobrist_collisions_hashmap(s, depth - 1, &board.make_move(&mv));
+        }
+    }
+
+    #[test]
+    fn test_zobrist_collisions() {
+        init_once();
+        gen_moves_once();
+
+        let mut tp = HashMap::new();
+
+        // NOTE: Once you get this to pass, increase ply to 5.
+        test_zobrist_collisions_hashmap(&mut tp, 4, &Board::from_start_pos());
+    }
+}
