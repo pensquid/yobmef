@@ -1,4 +1,4 @@
-use crate::chess::Board;
+use crate::chess::{Board, Color};
 use crate::movegen::{get_legal_moves, perft};
 use crate::search::Searcher;
 use crate::uci;
@@ -51,15 +51,31 @@ impl Engine {
     }
 
     fn go(&mut self, opts: uci::Go) {
-        // for debugging
+        // For debugging
         if let Some(depth) = opts.perft {
             self.perft(depth);
             return;
         }
 
+        let mut depth = 4;
+        let time = (match self.position.side_to_move {
+            Color::White => opts.white_time,
+            Color::Black => opts.black_time,
+        }).unwrap_or(u64::MAX);
+
+        if let Some(provided_depth) = opts.depth {
+            depth = provided_depth;
+        } else if time < 1000 {
+            depth = 3;
+        } else if time < 50000 {
+            depth = 4;
+        } else if time < 600000 {
+            depth = 5;
+        }
+
         let search_result = self
             .searcher
-            .search(&self.position, opts.depth.unwrap_or(4));
+            .search(&self.position, depth);
 
         println!("bestmove {}", search_result.mv.unwrap());
     }
