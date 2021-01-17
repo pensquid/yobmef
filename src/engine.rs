@@ -68,9 +68,10 @@ impl Engine {
             depth = provided_depth;
         } else if time < 6_000 {
             depth = 3;
-        } else if time < 60_000 {
+        } else if time < 60_000 * 5 {
             depth = 4;
-        } else if time < 600_000 {
+        } else {
+            // depth 5 for >5m
             depth = 5;
         }
 
