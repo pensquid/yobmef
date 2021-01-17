@@ -37,7 +37,7 @@ impl Searcher {
         let mut deepest = None;
         let mut depth = start_depth;
         // TODO: Normally you would do time control not node count.
-        while self.nodes < 10000 || deepest.is_none() {
+        while self.nodes < 1410 || deepest.is_none() {
             self.nodes = 0;
             let sr = self.alphabeta(board, depth, i16::MIN, i16::MAX);
             println!(

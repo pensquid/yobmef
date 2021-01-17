@@ -1,4 +1,6 @@
+use crate::bitboard::BitBoard;
 use crate::chess::{Board, Color, Piece, Square};
+use crate::movegen::get_attacked_squares;
 
 // SHITTY SHIT HERE, JUST FOR EXPERIMENTATION, NOT FOR USE IN FINAL PROGRAM
 // Inspiration from:
@@ -77,7 +79,36 @@ const KING_VALUE_TABLE_MIDDLEGAME: [i16; 64] = [
     -30, -40, -40,  -50, -50, -40, -40,  -30,
 ];
 
-fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
+#[rustfmt::skip]
+const ATTACK_VALUE_TABLE: [i16; 64] = [
+    0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   50,  40,  40,  50,   0,   0,
+    0,   0,   30,  80,  80,  30,   0,   0,
+    0,   0,   30,  80,  80,  30,  0,   0,
+    0,   0,   50,  40,  40,  50,  0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,
+];
+
+// Not i16::MAX, because we use i16::MAX as infinity, ie.
+// we want best move updated from None -> Some(mv) even if
+// the best move still results in our demise.
+pub const MATE: i16 = 10000;
+
+fn multiply_table(bitboard: &BitBoard, table: [i16; 64], square_value: i16) -> i16 {
+    (0..64)
+        .map(|i| {
+            let exists = bitboard.get(Square(i)) as i16;
+            let offset = table[i as usize];
+            let offset_value = square_value + offset;
+
+            exists * offset_value
+        })
+        .sum()
+}
+
+fn get_piece_score(board: &Board, color: Color, piece: Piece) -> i16 {
     let value = match piece {
         Piece::Pawn => 100,
         Piece::Knight => 320,
@@ -101,35 +132,33 @@ fn get_score_for_piece(board: &Board, color: Color, piece: Piece) -> i16 {
         bitboard.flip_vertical_mut()
     };
 
-    (0..64)
-        .map(|i| {
-            let exists = bitboard.get(Square(i)) as i16;
-            let offset = table[i as usize];
-            let offset_value = (value as i16) + offset;
-
-            exists * offset_value
-        })
-        .sum()
+    multiply_table(&bitboard, table, value as i16)
 }
 
-// Not i16::MAX, because we use i16::MAX as infinity, ie.
-// we want best move updated from None -> Some(mv) even if
-// the best move still results in our demise.
-pub const MATE: i16 = 10000;
-
-fn get_score_for_color(board: &Board, color: Color) -> i16 {
+fn get_piece_score_for_color(board: &Board, color: Color) -> i16 {
     let mut score = 0;
-    score += get_score_for_piece(board, color, Piece::Pawn);
-    score += get_score_for_piece(board, color, Piece::Knight);
-    score += get_score_for_piece(board, color, Piece::Bishop);
-    score += get_score_for_piece(board, color, Piece::Rook);
-    score += get_score_for_piece(board, color, Piece::Queen);
-    score += get_score_for_piece(board, color, Piece::King);
+    score += get_piece_score(board, color, Piece::Pawn);
+    score += get_piece_score(board, color, Piece::Knight);
+    score += get_piece_score(board, color, Piece::Bishop);
+    score += get_piece_score(board, color, Piece::Rook);
+    score += get_piece_score(board, color, Piece::Queen);
+    score += get_piece_score(board, color, Piece::King);
     score
 }
 
 pub fn get_score_ongoing(board: &Board) -> i16 {
-    get_score_for_color(board, Color::White) - get_score_for_color(&board, Color::Black)
+    let mut score = 0;
+
+    score += get_piece_score_for_color(board, Color::White) - get_piece_score_for_color(board, Color::Black);
+    score += 30 * board.side_to_move.polarize(); // Side to move gets inherent advantage
+
+    // This should probably account for how *many* pieces are attacking squares
+    let white_attacking = get_attacked_squares(board, Color::White);
+    let black_attacking = get_attacked_squares(board, Color::Black);
+    score += multiply_table(&white_attacking, ATTACK_VALUE_TABLE, 0);
+    score -= multiply_table(&black_attacking, ATTACK_VALUE_TABLE, 0);
+
+    score
 }
 
 pub fn get_score(board: &Board, legal_move_count: usize) -> i16 {
