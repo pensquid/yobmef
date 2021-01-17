@@ -2,7 +2,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use super::magic_utils::{
-    get_occupancy_mask, get_questions_and_answers, random_bitboard, NUM_MOVES,
+    get_occupancy_mask, get_questions_and_answers, NUM_MOVES,
 };
 
 use crate::bitboard::BitBoard;
@@ -80,7 +80,7 @@ fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
     let mut rng = StdRng::seed_from_u64(SEEDS[from_sq.rank() as usize]);
 
     while !done {
-        let magic_bitboard = random_bitboard(&mut rng);
+        let magic_bitboard = BitBoard::random(&mut rng);
 
         // DEAR GOD
         if (occupancy_mask * magic_bitboard).count_ones() < 6 {
@@ -100,6 +100,7 @@ fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
                 break;
             }
         }
+        
         if done {
             new_magic.number = magic_bitboard;
         }

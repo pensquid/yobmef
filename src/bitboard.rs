@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use crate::chess::Square;
 use std::fmt;
 
@@ -79,6 +81,10 @@ impl BitBoard {
     #[inline]
     pub fn count_ones(&self) -> u8 {
         self.0.count_ones() as u8
+    }
+
+    pub fn random<R: Rng>(rng: &mut R) -> BitBoard {
+        BitBoard(rng.gen::<u64>() & rng.gen::<u64>() & rng.gen::<u64>())
     }
 }
 

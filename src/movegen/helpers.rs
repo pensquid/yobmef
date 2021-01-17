@@ -1,6 +1,4 @@
 #![allow(dead_code)]
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 
 use super::{gen_moves_once, get_legal_moves};
 use crate::bitboard::BitBoard;
@@ -98,8 +96,8 @@ pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
 pub fn assert_moves(board: &Board, moves: &str) {
     let mut want_moves = vec_moves(moves);
     let mut got_moves = get_legal_moves(board);
-    want_moves.sort_by_key(|m| hash(m));
-    got_moves.sort_by_key(|m| hash(m));
+    want_moves.sort_by_key(|m| m.to_notation());
+    got_moves.sort_by_key(|m| m.to_notation());
 
     if want_moves != got_moves {
         eprintln!("{:?} to move\n{}", board.side_to_move, board);
@@ -115,10 +113,4 @@ fn vec_moves(moves_str: &str) -> Vec<Movement> {
         moves.push(Movement::from_notation(lan).unwrap())
     }
     moves
-}
-
-fn hash(mv: &Movement) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    mv.hash(&mut hasher);
-    hasher.finish()
 }

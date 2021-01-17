@@ -4,7 +4,7 @@ use crate::chess::Piece;
 use crate::chess::Square;
 
 // Calling it Movement and not Move because "move" is a keyword
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Movement {
     pub from_square: Square,
     pub to_square: Square,

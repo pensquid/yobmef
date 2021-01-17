@@ -1,5 +1,3 @@
-use rand::Rng;
-
 use crate::bitboard::BitBoard;
 use crate::chess::{Piece, Square};
 
@@ -81,10 +79,6 @@ pub fn get_occupancy_mask(sq: Square, piece: Piece) -> BitBoard {
 
         get_rays(sq, piece) & !tip_mask
     }
-}
-
-pub fn random_bitboard<R: Rng>(rng: &mut R) -> BitBoard {
-    BitBoard(rng.gen::<u64>() & rng.gen::<u64>() & rng.gen::<u64>())
 }
 
 // These directions functions get a list of functions which take squares

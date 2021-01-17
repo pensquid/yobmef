@@ -1,6 +1,6 @@
 use crate::chess::*;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Piece {
     Pawn = 0,
     Knight = 1,
