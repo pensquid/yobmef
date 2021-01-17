@@ -274,7 +274,7 @@ impl Board {
                 return None;
             }
             self.replace_mut(promoted_piece, movement.to_square);
-        } else if self.en_passant == Some(movement.to_square) {
+        } else if piece == Piece::Pawn && self.en_passant == Some(movement.to_square) {
             self.replace_mut(piece, movement.to_square);
             self.remove_mut(if self.side_to_move == Color::White {
                 movement.to_square.down(1).unwrap()
@@ -532,5 +532,20 @@ mod tests {
         board.make_move_mut(&Movement::from_notation("e8d7").unwrap());
         assert!(!board.can_castle_unchecked(CastlingSide::BlackKingside));
         assert!(!board.can_castle_unchecked(CastlingSide::BlackQueenside));
+    }
+
+    #[test]
+    fn test_make_move_bishop_en_passant() {
+        let mut board = Board::from_start_pos();
+
+        board.make_move_mut(&Movement::from_notation("e2e4").unwrap());
+        board.make_move_mut(&Movement::from_notation("a7a5").unwrap());
+        board.make_move_mut(&Movement::from_notation("f1a6").unwrap());
+
+        let on_a5 = board.piece_on(Square::from_notation("a5").unwrap());
+        let on_a6 = board.piece_on(Square::from_notation("a6").unwrap());
+
+        assert_eq!(on_a5, Some(Piece::Pawn));
+        assert_eq!(on_a6, Some(Piece::Bishop));
     }
 }
