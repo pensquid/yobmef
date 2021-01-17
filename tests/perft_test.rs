@@ -3,14 +3,50 @@ use yobmef::{
     movegen::{gen_moves_once, perft},
 };
 
-#[test]
-fn test_perft() {
+fn test_perft(depth: u16, want: u64) {
     gen_moves_once();
+    let got = perft(&Board::from_start_pos(), depth);
+    assert_eq!(
+        got,
+        want,
+        "perft({}) = {} want {} off by {}",
+        depth,
+        got,
+        want,
+        want - got,
+    );
+}
 
-    // taken from stockfish 'go perft n' as a reference, also
-    // the python-chess module perft agrees.
-    assert_eq!(perft(&Board::from_start_pos(), 3), 8902);
-    // assert_eq!(perft(&Board::from_start_pos(), 4), 197281);
-    // TODO: Uncomment once perft(4) is correct
-    // assert_eq!(perft(&Board::from_start_pos(), 5), 4865609);
+// Could be made DRY using a macro
+
+#[test]
+fn test_perft_1() {
+    test_perft(1, 20);
+}
+
+#[test]
+fn test_perft_2() {
+    test_perft(2, 400);
+}
+
+#[test]
+fn test_perft_3() {
+    test_perft(3, 8902);
+}
+
+#[test]
+fn test_perft_4() {
+    test_perft(4, 197281);
+}
+
+#[test]
+fn test_perft_5() {
+    test_perft(5, 4865609);
+}
+
+// Takes ~1m to run. also fails, so ignore by default.
+#[ignore]
+#[test]
+fn test_perft_6() {
+    test_perft(6, 119060324);
 }
