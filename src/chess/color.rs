@@ -5,6 +5,7 @@ pub enum Color {
 }
 
 impl Color {
+    #[inline]
     pub fn other(&self) -> Color {
         match self {
             Color::White => Color::Black,
@@ -12,6 +13,7 @@ impl Color {
         }
     }
 
+    #[inline]
     pub fn polarize(&self) -> i16 {
         match self {
             Color::White => 1,

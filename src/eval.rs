@@ -96,6 +96,7 @@ const ATTACK_VALUE_TABLE: [i16; 64] = [
 // the best move still results in our demise.
 pub const MATE: i16 = 10000;
 
+#[inline]
 fn multiply_table(bitboard: &BitBoard, table: [i16; 64], square_value: i16) -> i16 {
     (0..64)
         .map(|i| {
@@ -108,6 +109,7 @@ fn multiply_table(bitboard: &BitBoard, table: [i16; 64], square_value: i16) -> i
         .sum()
 }
 
+#[inline]
 fn get_piece_score(board: &Board, color: Color, piece: Piece) -> i16 {
     let value = match piece {
         Piece::Pawn => 100,
@@ -135,6 +137,7 @@ fn get_piece_score(board: &Board, color: Color, piece: Piece) -> i16 {
     multiply_table(&bitboard, table, value as i16)
 }
 
+#[inline]
 fn get_piece_score_for_color(board: &Board, color: Color) -> i16 {
     let mut score = 0;
     score += get_piece_score(board, color, Piece::Pawn);

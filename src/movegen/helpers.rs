@@ -96,8 +96,8 @@ pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
 pub fn assert_moves(board: &Board, moves: &str) {
     let mut want_moves = vec_moves(moves);
     let mut got_moves = get_legal_moves(board);
-    want_moves.sort_by_key(|m| m.to_notation());
-    got_moves.sort_by_key(|m| m.to_notation());
+    want_moves.sort_by_key(|m| m.hash());
+    got_moves.sort_by_key(|m| m.hash());
 
     if want_moves != got_moves {
         eprintln!("{:?} to move\n{}", board.side_to_move, board);

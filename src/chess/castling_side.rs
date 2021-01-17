@@ -10,6 +10,7 @@ pub enum CastlingSide {
 }
 
 impl CastlingSide {
+    #[inline]
     pub fn from_movement(movement: &Movement) -> Option<Self> {
         match movement {
             Movement {
@@ -38,6 +39,7 @@ impl CastlingSide {
         }
     }
 
+    #[inline]
     pub fn of_color(color: Color) -> [Self; 2] {
         match color {
             Color::White => [CastlingSide::WhiteKingside, CastlingSide::WhiteQueenside],
@@ -45,6 +47,7 @@ impl CastlingSide {
         }
     }
 
+    #[inline]
     pub fn from_rook_square(square: Square) -> Option<Self> {
         match square {
             Square(0) => Some(CastlingSide::WhiteQueenside),
@@ -55,6 +58,7 @@ impl CastlingSide {
         }
     }
 
+    #[inline]
     pub fn color(&self) -> Color {
         match self {
             CastlingSide::WhiteKingside => Color::White,
@@ -65,6 +69,7 @@ impl CastlingSide {
     }
 
     // PAIN AND SUFFERING
+    #[inline]
     pub fn get_rook_movement(&self) -> Movement {
         match self {
             CastlingSide::WhiteKingside => Movement::new(Square(7), Square(5), None),
@@ -74,6 +79,7 @@ impl CastlingSide {
         }
     }
 
+    #[inline]
     pub fn get_king_movement(&self) -> Movement {
         match self {
             CastlingSide::WhiteKingside => Movement::new(Square(4), Square(6), None),
@@ -83,6 +89,7 @@ impl CastlingSide {
         }
     }
 
+    #[inline]
     pub fn get_castling_middle(&self) -> BitBoard {
         match self {
             CastlingSide::WhiteKingside => BitBoard(0x60),
@@ -92,6 +99,7 @@ impl CastlingSide {
         }
     }
 
+    #[inline]
     pub fn get_castling_not_attacked(&self) -> BitBoard {
         match self {
             CastlingSide::WhiteKingside => BitBoard(0x70),

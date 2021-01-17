@@ -17,7 +17,7 @@ pub struct Searcher {
 }
 
 // Sorting is very important for alpha beta search pruning
-fn get_sorted_moves(board: &Board) -> Vec<Movement> {
+pub fn get_sorted_moves(board: &Board) -> Vec<Movement> {
     let mut moves = movegen::get_legal_moves(board);
     let legal_move_count = moves.len();
 
