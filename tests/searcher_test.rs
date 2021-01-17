@@ -126,6 +126,12 @@ test!(
     want: "c1a1",
 );
 
+test!(
+    name: save_bishop,
+    fen: "r2qkbnr/3bpppp/p1np4/1p6/2p1P3/1BP2N2/PP1P1PPP/RNBQ1RK1 w kq - 0 1",
+    want: "b3c2",
+);
+
 // TODO: Uncomment this later
 // test!(
 //     name: win_rook_in_4, // 8 ply
