@@ -3,8 +3,8 @@ use std::sync::Once;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
-use crate::chess::{Board, NUM_COLORS, NUM_PIECES, Square};
 use crate::bitboard::BitBoard;
+use crate::chess::{Board, Square, NUM_COLORS, NUM_PIECES};
 
 const NUM_RANDOMS: usize = NUM_PIECES * NUM_COLORS;
 static mut RANDOMS: [[BitBoard; 64]; NUM_RANDOMS] = [[BitBoard::empty(); 64]; NUM_RANDOMS];
@@ -36,14 +36,12 @@ pub fn hash(board: &Board) -> u64 {
 
     for i in 0..64 {
         let piece = board.piece_on(Square(i));
-        
+
         if let Some(piece) = piece {
             let color = board.color_on(Square(i));
 
             if let Some(color) = color {
-                unsafe {
-                    hash ^= RANDOMS[(piece as usize) * (color as usize)][i as usize]
-                }
+                unsafe { hash ^= RANDOMS[(piece as usize) * (color as usize)][i as usize] }
             }
         }
     }

@@ -58,4 +58,10 @@ impl Movement {
 
         lan
     }
+
+    pub fn hash(&self) -> u16 {
+        ((self.promote.unwrap_or(Piece::Pawn) as u16) << 12)
+            | ((self.from_square.0 as u16) << 6)
+            | (self.to_square.0 as u16)
+    }
 }

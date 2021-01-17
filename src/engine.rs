@@ -61,7 +61,8 @@ impl Engine {
         let time = (match self.position.side_to_move {
             Color::White => opts.white_time,
             Color::Black => opts.black_time,
-        }).unwrap_or(u64::MAX);
+        })
+        .unwrap_or(u64::MAX);
 
         if let Some(provided_depth) = opts.depth {
             depth = provided_depth;
@@ -73,9 +74,7 @@ impl Engine {
             depth = 5;
         }
 
-        let search_result = self
-            .searcher
-            .search(&self.position, depth);
+        let search_result = self.searcher.search(&self.position, depth);
 
         println!("bestmove {}", search_result.mv.unwrap());
     }

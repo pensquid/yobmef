@@ -1,9 +1,7 @@
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
-use super::magic_utils::{
-    get_occupancy_mask, get_questions_and_answers, NUM_MOVES,
-};
+use super::magic_utils::{get_occupancy_mask, get_questions_and_answers, NUM_MOVES};
 
 use crate::bitboard::BitBoard;
 use crate::chess::{Board, Color, Movement, Piece, Square};
@@ -100,7 +98,7 @@ fn gen_single_magic(from_sq: Square, piece: Piece, cur_offset: usize) -> usize {
                 break;
             }
         }
-        
+
         if done {
             new_magic.number = magic_bitboard;
         }

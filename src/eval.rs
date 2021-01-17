@@ -149,7 +149,8 @@ fn get_piece_score_for_color(board: &Board, color: Color) -> i16 {
 pub fn get_score_ongoing(board: &Board) -> i16 {
     let mut score = 0;
 
-    score += get_piece_score_for_color(board, Color::White) - get_piece_score_for_color(board, Color::Black);
+    score += get_piece_score_for_color(board, Color::White)
+        - get_piece_score_for_color(board, Color::Black);
     score += 30 * board.side_to_move.polarize(); // Side to move gets inherent advantage
 
     // This should probably account for how *many* pieces are attacking squares
