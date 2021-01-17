@@ -74,7 +74,7 @@ pub fn gen_pawn_moves() {
 pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
     // We need bitwise not because we want the mask to cancel when
     // a piece *IS* there, not when it isn't
-    let all_pieces = !board.combined();
+    let pushes_mask = !board.combined();
     let my_pawns = *board.pieces(Piece::Pawn) & *board.color_combined(color);
 
     let mut their_pieces = board.color_combined(color.other()).clone();
@@ -96,21 +96,20 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
         let mut moves_bitboard = BitBoard::empty();
 
         // Attacks
-        moves_bitboard |= pawn_attacks(from_sq, color);
-        moves_bitboard &= their_pieces;
+        moves_bitboard |= pawn_attacks(from_sq, color) & their_pieces;
 
         // Single pushes
-        let mut pushes = pawn_pushes(from_sq, color).clone();
-        pushes &= all_pieces;
+        let mut pushes = pawn_pushes(from_sq, color);
+        pushes &= pushes_mask;
         moves_bitboard |= pushes;
 
         // Double pushes
-        let mut dbl_pushes = pawn_dbl_pushes(from_sq, color).clone();
-        dbl_pushes &= all_pieces;
+        let mut dbl_pushes = pawn_dbl_pushes(from_sq, color);
+        dbl_pushes &= pushes_mask;
         dbl_pushes &= if color == Color::White {
-            BitBoard(all_pieces.0 << 8)
+            pushes_mask << 8 // up
         } else {
-            BitBoard(all_pieces.0 >> 8)
+            pushes_mask >> 8 // down
         };
         moves_bitboard |= dbl_pushes;
 
