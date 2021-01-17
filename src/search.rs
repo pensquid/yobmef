@@ -1,6 +1,7 @@
 use crate::chess::{Board, Color, Movement};
 use crate::eval;
 use crate::movegen;
+use std::time::Instant;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SearchResult {
@@ -41,10 +42,15 @@ impl Searcher {
         self.nodes = 0;
         self.pruned = 0;
 
+        let start = Instant::now();
         let sr = self.alphabeta(board, depth, i16::MIN, i16::MAX);
+        let end = Instant::now();
+        let took = end - start;
+        let nps = (self.nodes as f64 / took.as_secs_f64()) as u64;
+
         println!(
-            "info depth {} score cp {} nodes {}",
-            depth, sr.eval, self.nodes
+            "info depth {} score cp {} nodes {} nps {}",
+            depth, sr.eval, self.nodes, nps
         );
         sr
     }
