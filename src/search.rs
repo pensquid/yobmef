@@ -12,6 +12,7 @@ pub struct SearchResult {
 pub struct Searcher {
     // Search statistics
     pub nodes: u64,
+    pub pruned: u64,
 }
 
 // Sorting is very important for alpha beta search pruning
@@ -28,12 +29,18 @@ fn get_sorted_moves(board: &Board) -> Vec<Movement> {
 
 impl Searcher {
     pub fn new() -> Self {
-        Searcher { nodes: 0 }
+        Searcher {
+            nodes: 0,
+            pruned: 0,
+        }
     }
 
     // TODO: Quiet search
     // TODO: This is so fucking slow without a TP table
     pub fn search(&mut self, board: &Board, depth: u16) -> SearchResult {
+        self.nodes = 0;
+        self.pruned = 0;
+
         let sr = self.alphabeta(board, depth, i16::MIN, i16::MAX);
         println!(
             "info depth {} score cp {} nodes {}",
@@ -84,6 +91,7 @@ impl Searcher {
 
                 alpha = i16::max(alpha, score.eval);
                 if beta <= alpha {
+                    self.pruned += 1;
                     break;
                 }
             }
@@ -97,6 +105,7 @@ impl Searcher {
 
                 beta = i16::min(beta, score.eval);
                 if beta <= alpha {
+                    self.pruned += 1;
                     break;
                 }
             }
