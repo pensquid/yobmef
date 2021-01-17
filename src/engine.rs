@@ -66,11 +66,11 @@ impl Engine {
 
         if let Some(provided_depth) = opts.depth {
             depth = provided_depth;
-        } else if time < 1000 {
+        } else if time < 6_000 {
             depth = 3;
-        } else if time < 50000 {
+        } else if time < 60_000 {
             depth = 4;
-        } else if time < 600000 {
+        } else if time < 600_000 {
             depth = 5;
         }
 
