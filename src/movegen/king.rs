@@ -73,6 +73,7 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
 
     let attacks = super::get_attacked_squares(board, color.other());
     let our_rooks = *board.pieces(Piece::Rook) & our_pieces;
+    let all_pieces = our_pieces | board.color_combined(color.other());
 
     CastlingSide::of_color(color).iter().for_each(|side| {
         if !board.can_castle_unchecked(*side) {
@@ -82,7 +83,7 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
         let middle = side.get_castling_middle();
         let not_attacked = side.get_castling_not_attacked();
         let attacked = (attacks & not_attacked).count_ones() > 0;
-        let blocked = (our_pieces & middle).count_ones() > 0;
+        let blocked = (all_pieces & middle).count_ones() > 0;
 
         // This is really bad and horrible and needs optimization
         let king_movement = side.get_king_movement();
