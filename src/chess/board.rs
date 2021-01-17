@@ -241,13 +241,15 @@ impl Board {
     }
 
     // This function WILL break if passed invalid moves
-    pub fn make_move_mut(&mut self, movement: &Movement) -> Option<()> {
+    pub fn make_move_mut(&mut self, movement: &Movement) {
         let color = self
             .color_on(movement.from_square)
-            .expect(&*format!("no color on square {}", movement.from_square));
+            .expect(format!("no color on square {}", movement.from_square).as_str());
 
         // Find the piece type
-        let piece = self.piece_on(movement.from_square)?;
+        let piece = self
+            .piece_on(movement.from_square)
+            .expect(format!("no piece on {}", movement.from_square).as_str());
 
         // Handle castling, horrible, pain, aaaaa, cursed
         if piece == Piece::King {
@@ -271,7 +273,7 @@ impl Board {
         // Move to the destination or promote
         if let Some(promoted_piece) = movement.promote {
             if !promoted_piece.can_promote_to() {
-                return None;
+                return;
             }
             self.replace_mut(promoted_piece, movement.to_square);
         } else if piece == Piece::Pawn && self.en_passant == Some(movement.to_square) {
@@ -313,8 +315,6 @@ impl Board {
 
         // Switch side to move
         self.side_to_move = self.side_to_move.other();
-
-        Some(())
     }
 
     // TODO: Test
@@ -463,7 +463,7 @@ mod tests {
         eprintln!("{}", b);
 
         let movement = &Movement::from_notation("e4d5").unwrap();
-        b.make_move_mut(movement).unwrap();
+        b.make_move_mut(movement);
         b.assert_valid();
 
         assert_eq!(b.piece_on(movement.to_square), Some(Piece::Pawn));
@@ -476,7 +476,7 @@ mod tests {
             Board::from_fen("rnbqkbnr/ppp2ppp/8/3P4/8/2Np4/PP2PPPP/R1BQKBNR w KQkq - 0 1").unwrap();
 
         let movement = &Movement::from_notation("e2d3").unwrap();
-        b.make_move_mut(movement).unwrap();
+        b.make_move_mut(movement);
 
         b.assert_valid();
     }

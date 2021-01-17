@@ -208,9 +208,7 @@ mod tests {
         let mut board = Board::from_fen("k1K5/8/8/8/3PPp2/8/8/8 b - e3 0 1").unwrap();
         moves_test(&board, "f4e3 f4f3", "d4d5");
 
-        board
-            .make_move_mut(&Movement::from_notation("f4e3").unwrap())
-            .unwrap();
+        board.make_move_mut(&Movement::from_notation("f4e3").unwrap());
         board.assert_valid();
         moves_test(&board, "d4d5", "e4e5");
     }
