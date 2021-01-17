@@ -10,8 +10,6 @@ pub struct SearchResult {
 
 #[derive(Debug)]
 pub struct Searcher {
-    // TODO: Transposition table
-
     // Search statistics
     pub nodes: u64,
 }
@@ -34,15 +32,23 @@ impl Searcher {
     }
 
     // TODO: Quiet search
-    // TODO: Iterative deepening (stop when uci 'stop' is sent)
-    pub fn search(&mut self, board: &Board, depth: u16) -> SearchResult {
-        self.nodes = 0;
-        let sr = self.alphabeta(board, depth, i16::MIN, i16::MAX);
-        println!(
-            "info depth {} score cp {} nodes {}",
-            depth, sr.eval, self.nodes
-        );
-        return sr;
+    // TODO: This is so fucking slow without a TP table
+    pub fn search(&mut self, board: &Board, start_depth: u16) -> SearchResult {
+        let mut deepest = None;
+        let mut depth = start_depth;
+        // TODO: Normally you would do time control not node count.
+        while self.nodes < 10000 || deepest.is_none() {
+            self.nodes = 0;
+            let sr = self.alphabeta(board, depth, i16::MIN, i16::MAX);
+            println!(
+                "info depth {} score cp {} nodes {}",
+                depth, sr.eval, self.nodes
+            );
+            deepest = Some(sr);
+            depth += 1;
+        }
+
+        return deepest.unwrap();
     }
 
     pub fn alphabeta(
