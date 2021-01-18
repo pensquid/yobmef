@@ -79,7 +79,6 @@ impl Searcher {
         self.nodes += 1;
         let depth_to_go = max_depth - depth;
 
-        // FIXME: fastest mate tests don't like this
         if let Some(sr) = self.tp.get(board) {
             if sr.depth >= depth_to_go {
                 return sr.clone();
@@ -99,7 +98,10 @@ impl Searcher {
                 depth: 0,
             };
             if i16::abs(sr.eval) == eval::MATE {
-                sr.eval -= (depth as i16) * board.side_to_move.polarize()
+                // if side_to_move = White:
+                //   black won, so we add depth to make black prefer shorter mates.
+                // ditto for if side_to_move = Black.
+                sr.eval += (depth as i16) * board.side_to_move.polarize()
             }
             // We don't store the static eval in the TP table, because
             // looking it up would likely take longer then re-computing it!
