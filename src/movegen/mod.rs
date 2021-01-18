@@ -79,11 +79,6 @@ impl Iterator for MoveGen {
     }
 }
 
-#[deprecated]
-pub fn get_legal_moves(board: &Board) -> Vec<Movement> {
-    MoveGen::new_legal(board).collect()
-}
-
 pub fn get_pseudolegal_moves(board: &Board) -> Vec<Movement> {
     let mut moves = Vec::new();
     pawn::get_pawn_moves(board, &mut moves, board.side_to_move);
@@ -105,10 +100,10 @@ pub fn get_attacked_squares(board: &Board, color: Color) -> BitBoard {
 // For debugging, used in tests and for a debug command 'go perft depth'
 pub fn perft(board: &Board, depth: u16) -> u64 {
     if depth == 1 {
-        return get_legal_moves(board).len() as u64;
+        return MoveGen::new_legal(board).count() as u64;
     } else {
         let mut n = 0;
-        for mv in get_legal_moves(board) {
+        for mv in MoveGen::new_legal(board) {
             n += perft(&board.make_move(&mv), depth - 1);
         }
         return n;

@@ -180,7 +180,7 @@ pub fn get_score(board: &Board, legal_move_count: usize) -> i16 {
 mod tests {
     use super::*;
     use crate::movegen::gen_moves_once;
-    use crate::{chess::Movement, movegen};
+    use crate::{chess::Movement, movegen::MoveGen};
 
     #[test]
     fn test_get_score_e2e4() {
@@ -189,7 +189,7 @@ mod tests {
         let mut b = Board::from_start_pos();
         b.make_move_mut(&Movement::from_notation("e2e4").expect("e2e4 move is valid"));
 
-        let score = get_score(&b, movegen::get_legal_moves(&b).len());
+        let score = get_score(&b, MoveGen::new_legal(&b).count());
         eprintln!("score: {}", score);
         assert!(score > 0); // White should have the advantage
     }
@@ -201,7 +201,7 @@ mod tests {
         let b =
             Board::from_fen("r1b1kb1r/pppp1pp1/2n5/1B2p3/4PP2/6p1/PPPP2Pq/RNBQNRK1 w kq f3 0 8")
                 .unwrap();
-        let score = get_score(&b, movegen::get_legal_moves(&b).len());
+        let score = get_score(&b, MoveGen::new_legal(&b).count());
 
         eprintln!("board:\n{}", b);
         eprintln!("score (white in checkmate) = {}", score);
@@ -213,7 +213,7 @@ mod tests {
         gen_moves_once();
 
         let b = Board::from_fen("k1R5/8/1K6/8/8/8/8/8 b - - 0 1").unwrap();
-        let score = get_score(&b, movegen::get_legal_moves(&b).len());
+        let score = get_score(&b, MoveGen::new_legal(&b).count());
 
         eprintln!("board:\n{}", b);
         eprintln!("score (black in checkmate) = {}", score);
@@ -227,9 +227,9 @@ mod tests {
         let mut b =
             Board::from_fen("rnbqkb1r/ppp2ppp/3p1n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4")
                 .unwrap();
-        let score_1 = get_score(&b, movegen::get_legal_moves(&b).len());
+        let score_1 = get_score(&b, MoveGen::new_legal(&b).count());
         b.make_move_mut(&Movement::from_notation("e1g1").unwrap());
-        let score_2 = get_score(&b, movegen::get_legal_moves(&b).len());
+        let score_2 = get_score(&b, MoveGen::new_legal(&b).count());
         println!("{} should be > {}", score_2, score_1);
         assert!(score_2 > score_1);
     }
