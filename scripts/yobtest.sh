@@ -29,5 +29,5 @@ c-chess-cli \
   -each tc=10+0.1 -games 10 \
   -openings file=$BOOK \
   -sprt elo0=0 elo1=5 \
-  -resign 3 700 -draw 8 10
+  -resign 3 700 -draw 8 10 -log \
 
