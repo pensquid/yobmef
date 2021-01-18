@@ -25,3 +25,6 @@ opt-level = 3
 
 [profile.release]
 debug = true
+
+[profile.bench]
+debug = true
