@@ -71,7 +71,7 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
         moves.push(movement);
     }
 
-    let attacks = super::get_attacked_squares(board, color.other());
+    let attacks = board.attacked(color.other());
     let our_rooks = *board.pieces(Piece::Rook) & our_pieces;
     let all_pieces = our_pieces | board.color_combined(color.other());
 
