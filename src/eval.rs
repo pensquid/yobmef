@@ -234,4 +234,3 @@ mod tests {
         assert!(score_2 > score_1);
     }
 }
-
