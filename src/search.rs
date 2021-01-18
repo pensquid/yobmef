@@ -27,9 +27,7 @@ pub struct Searcher {
 
 // Sorting is very important for alpha beta search pruning
 pub fn sort_by_promise(board: &Board, moves: &mut Vec<Movement>) {
-    let legal_move_count = moves.len();
-
-    moves.sort_by_key(|m| eval::get_score(&board.make_move(m), legal_move_count));
+    moves.sort_by_key(|m| eval::get_score(&board.make_move(m)));
     if board.side_to_move == Color::White {
         moves.reverse()
     };
@@ -147,12 +145,9 @@ impl Searcher {
             // even if the depth is not sufficent to return it immediately.
         }
 
-        let mut moves = movegen::get_legal_moves(board);
-        let is_game_over = moves.len() == 0;
-
-        if depth >= max_depth || is_game_over {
+        if depth >= max_depth || board.is_game_over() {
             let mut sr = SearchResult {
-                eval: eval::get_score(board, moves.len()),
+                eval: eval::get_score(board),
                 mv: None,
                 depth: 0,
             };
@@ -166,6 +161,8 @@ impl Searcher {
             // looking it up would likely take longer then re-computing it!
             return sr;
         }
+
+        let mut moves = movegen::get_pseudolegal_moves(board);
 
         sort_by_promise(board, &mut moves);
 

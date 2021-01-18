@@ -24,6 +24,7 @@ fn gen_moves() {
     magic::gen_all_magics();
 }
 
+// Legal moves, excluding check logic (kings can be captured)
 pub fn get_pseudolegal_moves(board: &Board) -> Vec<Movement> {
     let mut moves = Vec::new();
     pawn::get_pawn_moves(board, &mut moves, board.side_to_move);
@@ -42,6 +43,7 @@ pub fn get_attacked_squares(board: &Board, color: Color) -> BitBoard {
     attacks
 }
 
+// Get legal moves, including check logic (kings cannot be captured)
 pub fn get_legal_moves(board: &Board) -> Vec<Movement> {
     let pseudolegal = get_pseudolegal_moves(board);
 

@@ -53,6 +53,11 @@ impl Board {
         old_piece
     }
 
+    // UNDEFINED FOR INVALID BOARD!
+    pub fn is_game_over(&self) -> bool {
+        self.pieces(Piece::King).count_ones() != 2
+    }
+
     pub fn in_check(&self) -> bool {
         let attacked = movegen::get_attacked_squares(&self.other_side(), self.side_to_move.other());
         let our_pieces = self.color_combined(self.side_to_move);
