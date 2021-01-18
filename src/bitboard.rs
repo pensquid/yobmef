@@ -88,7 +88,7 @@ impl BitBoard {
     }
 
     #[inline]
-    fn from_square(sq: Square) -> BitBoard {
+    pub fn from_square(sq: Square) -> BitBoard {
         BitBoard(1 << sq.0)
     }
 
@@ -102,7 +102,7 @@ impl BitBoard {
     }
 }
 
-// Iterate over the bitboard, from the top down.
+// Iterate over the bitboard, order is undefined and subject to change.
 impl Iterator for BitBoard {
     type Item = Square;
 

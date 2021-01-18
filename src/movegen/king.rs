@@ -36,13 +36,7 @@ pub fn get_king_attacks(board: &Board, color: Color) -> BitBoard {
     let our_pieces = *board.color_combined(color);
     let king = *board.pieces(Piece::King) & our_pieces;
 
-    for from_sq_index in 0..64 {
-        let from_sq = Square(from_sq_index);
-        let only_from_sq = 1 << from_sq_index;
-        if (king.0 & only_from_sq) == 0 {
-            continue;
-        }
-
+    for from_sq in king {
         attacks |= king_moves(from_sq);
 
         // If we have more then one king; we've got bigger problems
@@ -61,12 +55,7 @@ pub fn get_king_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
 
     let moves_bitboard = king_moves(king_sq) & !our_pieces;
 
-    for to_sq_index in 0..64 {
-        let to_sq = Square(to_sq_index);
-        if !moves_bitboard.get(to_sq) {
-            continue;
-        }
-
+    for to_sq in moves_bitboard {
         let movement = Movement::new(king_sq, to_sq, None);
         moves.push(movement);
     }
@@ -152,7 +141,7 @@ mod tests {
 
     #[test]
     fn test_king_castling_blocked() {
-        let mut board = Board::from_fen("rp2k2r/8/8/8/8/8/8/R3K1PR w KQkq - 0 1").unwrap();
+        let mut board = Board::from_fen("rn2k2r/8/8/8/8/8/8/R3K1NR w KQkq - 0 1").unwrap();
         moves_test(&board, "e1c1", "e1g1");
         board.side_to_move = Color::Black;
         moves_test(&board, "e8g8", "e8c8");

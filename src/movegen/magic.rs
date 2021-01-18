@@ -181,9 +181,9 @@ pub fn get_sliding_moves(board: &Board, moves: &mut Vec<Movement>, color: Color)
     let my_queens = *board.pieces(Piece::Queen) & my_pieces;
     let my_rooks = *board.pieces(Piece::Rook) & my_pieces;
     let my_bishops = *board.pieces(Piece::Bishop) & my_pieces;
+    let my_sliding_pieces = my_rooks | my_bishops | my_queens;
 
-    for from_sq_index in 0..64 {
-        let from_sq = Square(from_sq_index);
+    for from_sq in my_sliding_pieces {
         let moves_bitboard = if my_rooks.get(from_sq) {
             get_sliding_moves_bb(from_sq, Piece::Rook, &all_pieces) & !my_pieces
         } else if my_bishops.get(from_sq) {
@@ -191,15 +191,10 @@ pub fn get_sliding_moves(board: &Board, moves: &mut Vec<Movement>, color: Color)
         } else if my_queens.get(from_sq) {
             get_sliding_moves_bb(from_sq, Piece::Queen, &all_pieces) & !my_pieces
         } else {
-            continue;
+            panic!("my_sliding_pieces contains a non sliding piece");
         };
 
-        for to_sq_index in 0..64 {
-            let to_sq = Square(to_sq_index);
-            if !moves_bitboard.get(to_sq) {
-                continue;
-            }
-
+        for to_sq in moves_bitboard {
             moves.push(Movement::new(from_sq, to_sq, None));
         }
     }
