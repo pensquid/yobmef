@@ -3,7 +3,7 @@ use rand::Rng;
 use crate::chess::Square;
 use std::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BitBoard(pub u64);
 
 impl fmt::Display for BitBoard {
