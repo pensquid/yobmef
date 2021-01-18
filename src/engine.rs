@@ -73,10 +73,14 @@ impl Engine {
             return;
         }
 
-        let thinking_time = self.thinking_time(opts);
-        let search_result = self.searcher.search_timed(&self.position, thinking_time);
+        let sr = if let Some(depth) = opts.depth {
+            self.searcher.search_depth(&self.position, depth)
+        } else {
+            let thinking_time = self.thinking_time(opts);
+            self.searcher.search_timed(&self.position, thinking_time)
+        };
 
-        println!("bestmove {}", search_result.mv.unwrap());
+        println!("bestmove {}", sr.mv.unwrap());
     }
 
     fn handle(&mut self, msg: uci::EngineMessage) {

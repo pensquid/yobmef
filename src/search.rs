@@ -53,17 +53,22 @@ impl Searcher {
     }
 
     pub fn search_depth(&mut self, board: &Board, depth: u16) -> SearchResult {
-        self.reset_stats();
-        self.alphabeta(board, depth, 0, i16::MIN, i16::MAX)
+        self.search(board, |sr| sr.depth >= depth)
     }
 
     // TODO: Quiet search
     pub fn search_timed(&mut self, board: &Board, thinking_time: Duration) -> SearchResult {
+        let start = Instant::now();
+        self.search(board, |_sr| start.elapsed() > thinking_time)
+    }
+
+    pub fn search<F>(&mut self, board: &Board, quit: F) -> SearchResult
+    where
+        F: Fn(SearchResult) -> bool,
+    {
         self.reset_stats();
 
         let mut deepest = None;
-
-        let start = Instant::now();
 
         // Bound ply because of possible recursion limit in endgames.
         for depth in 1..1000 {
@@ -75,9 +80,9 @@ impl Searcher {
                 "info depth {} score cp {} nodes {} nps {}",
                 depth, sr.eval, self.nodes, nps
             );
-            deepest = Some(sr);
+            deepest = Some(sr.clone());
 
-            if start.elapsed() > thinking_time {
+            if quit(sr) {
                 break;
             }
         }
