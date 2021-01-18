@@ -259,12 +259,12 @@ impl Board {
 
         let color = self
             .color_on(movement.from_square)
-            .expect(format!("no color on square {}", movement.from_square).as_str());
+            .expect("no color on square");
 
         // Find the piece type
         let piece = self
             .piece_on(movement.from_square)
-            .expect(format!("no piece on {}", movement.from_square).as_str());
+            .expect("no piece on square");
 
         // Piece specific logic
         match piece {
