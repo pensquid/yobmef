@@ -4,6 +4,7 @@ use crate::search::Searcher;
 use crate::uci;
 use crate::uci::EngineMessage;
 use std::io;
+use std::time::Duration;
 
 pub struct Engine {
     position: Board,
@@ -50,6 +51,21 @@ impl Engine {
         eprintln!("\nNodes searched: {}", nodes);
     }
 
+    fn thinking_time(&self, opts: uci::Go) -> Duration {
+        let (our_time, our_increment) = match self.position.side_to_move {
+            Color::White => (opts.white_time, opts.white_increment),
+            Color::Black => (opts.black_time, opts.black_increment),
+        };
+        // default to as if we had 10m no inc for correspondence games.
+        let our_time = our_time.unwrap_or(600_000);
+        let our_increment = our_increment.unwrap_or(0);
+
+        // 80 is just a conservative estimate on the avg game length.
+        let time_for_this_move = our_time / 80;
+
+        Duration::from_millis(time_for_this_move + our_increment)
+    }
+
     fn go(&mut self, opts: uci::Go) {
         // For debugging
         if let Some(depth) = opts.perft {
@@ -57,24 +73,8 @@ impl Engine {
             return;
         }
 
-        let time = (match self.position.side_to_move {
-            Color::White => opts.white_time,
-            Color::Black => opts.black_time,
-        })
-        .unwrap_or(u64::MAX);
-
-        let depth = if let Some(provided_depth) = opts.depth {
-            provided_depth
-        } else if time < 6_000 {
-            3
-        } else if time < 60_000 * 5 {
-            4
-        } else {
-            // depth 5 for >5m
-            5
-        };
-
-        let search_result = self.searcher.search(&self.position, depth);
+        let thinking_time = self.thinking_time(opts);
+        let search_result = self.searcher.search_timed(&self.position, thinking_time);
 
         println!("bestmove {}", search_result.mv.unwrap());
     }
@@ -127,5 +127,19 @@ mod tests {
         let fen = "K1k5/8/8/8/8/8/8/8 w - - 0 1";
         engine.handle(uci::parse(&format!("position fen {}", fen)).unwrap());
         assert_eq!(engine.position, Board::from_fen(fen).unwrap());
+    }
+
+    #[test]
+    fn test_think_time() {
+        // reasonable bounds on thinking time
+
+        let engine = Engine::new();
+        let mut opts = uci::Go::empty();
+        opts.white_time = Some(300_000);
+        // black_time: 300_000,
+        let t = engine.thinking_time(opts).as_millis();
+
+        // assume you will think between 1s and 10s per move in a 5 minute game
+        assert!(1_000 < t && t < 10_000, "1s < t({}s) < 10s", t / 1000);
     }
 }

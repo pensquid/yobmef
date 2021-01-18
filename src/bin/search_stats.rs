@@ -13,7 +13,7 @@ fn main() {
         let mut searcher = Searcher::new();
 
         let start = Instant::now();
-        searcher.search(&board, depth);
+        searcher.search_depth(&board, depth);
         let took = Instant::now() - start;
 
         eprintln!(

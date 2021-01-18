@@ -2,7 +2,7 @@ use crate::chess::{Board, Color, Movement};
 use crate::eval;
 use crate::movegen;
 use std::collections::HashMap;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SearchResult {
@@ -46,26 +46,40 @@ impl Searcher {
         }
     }
 
-    // TODO: Quiet search
-    pub fn search(&mut self, board: &Board, max_depth: u16) -> SearchResult {
+    fn reset_stats(&mut self) {
         self.nodes = 0;
         self.pruned = 0;
         self.cached = 0;
+    }
+
+    pub fn search_depth(&mut self, board: &Board, depth: u16) -> SearchResult {
+        self.reset_stats();
+        self.alphabeta(board, depth, 0, i16::MIN, i16::MAX)
+    }
+
+    // TODO: Quiet search
+    pub fn search_timed(&mut self, board: &Board, thinking_time: Duration) -> SearchResult {
+        self.reset_stats();
 
         let mut deepest = None;
 
-        for depth in 1..(max_depth + 1) {
-            let start = Instant::now();
+        let start = Instant::now();
+
+        // Bound ply because of possible recursion limit in endgames.
+        for depth in 1..1000 {
+            let ab_start = Instant::now();
             let sr = self.alphabeta(board, depth, 0, i16::MIN, i16::MAX);
-            let end = Instant::now();
-            let took = end - start;
-            let nps = (self.nodes as f64 / took.as_secs_f64()) as u64;
+            let nps = (self.nodes as f64 / ab_start.elapsed().as_secs_f64()) as u64;
 
             println!(
                 "info depth {} score cp {} nodes {} nps {}",
                 depth, sr.eval, self.nodes, nps
             );
             deepest = Some(sr);
+
+            if start.elapsed() > thinking_time {
+                break;
+            }
         }
 
         // so we don't use infinite memory

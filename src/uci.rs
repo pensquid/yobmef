@@ -16,8 +16,8 @@ pub struct Go {
 
     pub white_time: Option<u64>,
     pub black_time: Option<u64>,
-    pub white_increment: Option<u32>,
-    pub black_increment: Option<u32>,
+    pub white_increment: Option<u64>,
+    pub black_increment: Option<u64>,
     pub moves_to_go: Option<u8>,
 
     pub depth: Option<u16>,
@@ -152,8 +152,8 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
 
                     "wtime" => go.white_time = u64::from_str(words.next()?).ok(),
                     "btime" => go.black_time = u64::from_str(words.next()?).ok(),
-                    "winc" => go.white_increment = u32::from_str(words.next()?).ok(),
-                    "binc" => go.black_increment = u32::from_str(words.next()?).ok(),
+                    "winc" => go.white_increment = u64::from_str(words.next()?).ok(),
+                    "binc" => go.black_increment = u64::from_str(words.next()?).ok(),
                     "movestogo" => go.moves_to_go = u8::from_str(words.next()?).ok(),
 
                     "depth" => go.depth = u16::from_str(words.next()?).ok(),
