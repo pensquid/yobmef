@@ -24,6 +24,51 @@ fn gen_moves() {
     magic::gen_all_magics();
 }
 
+pub struct MoveGen {
+    pseudolegal: Vec<Movement>,
+    idx: usize,
+    board: Board,
+}
+
+impl MoveGen {
+    pub fn new_legal(board: Board) -> MoveGen {
+        let pseudolegal = get_pseudolegal_moves(&board);
+        let idx = 0;
+        MoveGen {
+            pseudolegal,
+            idx,
+            board,
+        }
+    }
+}
+
+impl Iterator for MoveGen {
+    type Item = Movement;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.idx < self.pseudolegal.len() {
+            let mv = &self.pseudolegal[self.idx];
+            self.idx += 1;
+
+            let after_move = self.board.make_move(&mv);
+            let attacks = get_attacked_squares(&after_move, after_move.side_to_move);
+
+            let only_our_king = 1 << after_move.king(self.board.side_to_move).0;
+            let is_in_check = (attacks.0 & only_our_king).count_ones() > 0;
+            if !is_in_check {
+                return Some(mv.clone());
+            }
+        }
+
+        return None;
+    }
+}
+
+#[deprecated]
+pub fn get_legal_moves(board: &Board) -> Vec<Movement> {
+    MoveGen::new_legal(board.clone()).collect()
+}
+
 pub fn get_pseudolegal_moves(board: &Board) -> Vec<Movement> {
     let mut moves = Vec::new();
     pawn::get_pawn_moves(board, &mut moves, board.side_to_move);
@@ -40,22 +85,6 @@ pub fn get_attacked_squares(board: &Board, color: Color) -> BitBoard {
     attacks |= king::get_king_attacks(&board, color);
     attacks |= magic::get_sliding_attacks(&board, color);
     attacks
-}
-
-pub fn get_legal_moves(board: &Board) -> Vec<Movement> {
-    let pseudolegal = get_pseudolegal_moves(board);
-
-    pseudolegal
-        .into_iter()
-        .filter(|mv| {
-            let after_move = board.make_move(mv);
-            let attacks = get_attacked_squares(&after_move, board.side_to_move.other());
-
-            let only_our_king = 1 << after_move.king(board.side_to_move).0;
-            let is_in_check = (attacks.0 & only_our_king).count_ones() > 0;
-            !is_in_check
-        })
-        .collect()
 }
 
 // For debugging, used in tests and for a debug command 'go perft depth'
