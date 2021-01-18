@@ -79,6 +79,7 @@ mod tests {
         }
     }
 
+    #[ignore]
     #[test]
     fn test_zobrist_collisions() {
         init_once();
