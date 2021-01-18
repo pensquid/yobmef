@@ -60,8 +60,8 @@ pub fn get_legal_moves(board: &Board) -> Vec<Movement> {
 
 // For debugging, used in tests and for a debug command 'go perft depth'
 pub fn perft(board: &Board, depth: u16) -> u64 {
-    if depth == 0 {
-        return 1;
+    if depth == 1 {
+        return get_legal_moves(board).len() as u64;
     } else {
         let mut n = 0;
         for mv in get_legal_moves(board) {
