@@ -1,5 +1,5 @@
 use crate::chess::{Board, Color};
-use crate::movegen::{get_legal_moves, perft};
+use crate::movegen::{perft, MoveGen};
 use crate::search::Searcher;
 use crate::uci;
 use crate::uci::EngineMessage;
@@ -42,7 +42,7 @@ impl Engine {
         let board = &self.position;
 
         let mut nodes = 0;
-        for mv in get_legal_moves(&board) {
+        for mv in MoveGen::new_legal(&board) {
             let n = perft(&board.make_move(&mv), depth - 1);
             eprintln!("{}: {}", mv, n);
             nodes += n;

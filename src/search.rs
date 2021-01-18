@@ -1,6 +1,6 @@
 use crate::chess::{Board, Color, Movement};
 use crate::eval;
-use crate::movegen;
+use crate::movegen::MoveGen;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -147,7 +147,7 @@ impl Searcher {
             // even if the depth is not sufficent to return it immediately.
         }
 
-        let mut moves = movegen::get_legal_moves(board);
+        let mut moves: Vec<Movement> = MoveGen::new_legal(board).collect();
         let is_game_over = moves.len() == 0;
 
         if depth >= max_depth || is_game_over {
@@ -219,6 +219,7 @@ impl Searcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::movegen;
 
     #[ignore]
     #[test]
@@ -229,7 +230,7 @@ mod tests {
             Board::from_fen("rn1qkbnr/ppp2ppp/3p4/4p2Q/2B1P1b1/8/PPPP1PPP/RNB1K1NR w KQkq - 2 4")
                 .unwrap();
 
-        let mut moves = movegen::get_legal_moves(&board);
+        let mut moves = MoveGen::new_legal(&board).collect();
         sort_by_promise(&board, &mut moves);
 
         assert_eq!(moves[0], Movement::from_notation("h5f7").unwrap());

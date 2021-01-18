@@ -4,7 +4,7 @@ use std::io::BufReader;
 use std::process::{Command, Stdio};
 use std::str::FromStr;
 use yobmef::chess::{Board, Movement};
-use yobmef::movegen::{gen_moves_once, get_legal_moves, perft};
+use yobmef::movegen::{gen_moves_once, perft, MoveGen};
 
 #[derive(Debug, PartialEq, Eq)]
 struct PerftResult {
@@ -64,7 +64,7 @@ fn engine_perft(path: &str, moves: &str, depth: u16) -> Result<PerftResults, Box
 fn yobmef_perft(board: &Board, depth: u16) -> PerftResults {
     let mut res = Vec::new();
 
-    for mv in get_legal_moves(&board) {
+    for mv in MoveGen::new_legal(&board) {
         let nodes = perft(&board.make_move(&mv), depth - 1);
         res.push(PerftResult { mv, nodes });
     }

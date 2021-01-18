@@ -53,7 +53,7 @@ pub fn hash(board: &Board) -> u64 {
 mod tests {
     use super::*;
     use crate::chess::Board;
-    use crate::movegen::{gen_moves_once, get_legal_moves};
+    use crate::movegen::{gen_moves_once, MoveGen};
     use std::collections::HashMap;
 
     fn test_zobrist_collisions_hashmap(s: &mut HashMap<u64, Board>, depth: u16, board: &Board) {
@@ -61,7 +61,7 @@ mod tests {
             return;
         }
 
-        for mv in get_legal_moves(board) {
+        for mv in MoveGen::new_legal(board) {
             let h = hash(board);
             let previous = s.insert(h, board.clone());
             if let Some(previous) = &previous {

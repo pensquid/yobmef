@@ -111,10 +111,10 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
         // Add all the moves
         for to_sq in moves_bitboard {
             if to_sq.rank() == promotion_rank {
-                moves.push(Movement::new(from_sq, to_sq, Some(Piece::Bishop)));
-                moves.push(Movement::new(from_sq, to_sq, Some(Piece::Rook)));
-                moves.push(Movement::new(from_sq, to_sq, Some(Piece::Knight)));
                 moves.push(Movement::new(from_sq, to_sq, Some(Piece::Queen)));
+                moves.push(Movement::new(from_sq, to_sq, Some(Piece::Knight)));
+                moves.push(Movement::new(from_sq, to_sq, Some(Piece::Rook)));
+                moves.push(Movement::new(from_sq, to_sq, Some(Piece::Bishop)));
             } else {
                 moves.push(Movement::new(from_sq, to_sq, None));
             }
