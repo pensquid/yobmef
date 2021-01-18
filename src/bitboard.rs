@@ -86,6 +86,35 @@ impl BitBoard {
     pub fn random<R: Rng>(rng: &mut R) -> BitBoard {
         BitBoard(rng.gen::<u64>() & rng.gen::<u64>() & rng.gen::<u64>())
     }
+
+    #[inline]
+    pub fn from_square(sq: Square) -> BitBoard {
+        BitBoard(1 << sq.0)
+    }
+
+    // Convert this bitboard to a Square.
+    // If the bitboard has multiple bits flipped,
+    // This function must still return a valid square.
+    #[inline]
+    fn to_square(&self) -> Square {
+        debug_assert!(self.0 != 0, "empty board cannot be made into a square");
+        Square(self.0.trailing_zeros() as u8)
+    }
+}
+
+// Iterate over the bitboard, order is undefined and subject to change.
+impl Iterator for BitBoard {
+    type Item = Square;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.0 == 0 {
+            return None;
+        } else {
+            let result = self.to_square();
+            *self ^= BitBoard::from_square(result);
+            Some(result)
+        }
+    }
 }
 
 macro_rules! impl_op {
@@ -238,5 +267,20 @@ mod tests {
         assert!(b.get(Square::new(7, 0)));
         assert!(b.get(Square::new(6, 1)));
         assert!(b.get(Square::new(5, 7)));
+    }
+
+    #[test]
+    fn test_iterate() {
+        let mut b = BitBoard(0b1011);
+
+        eprintln!("bitboard:\n{}\n", b);
+
+        // Iteration currently goes from top left by right.
+        assert_eq!(b.next(), Some(Square(0)));
+        assert_eq!(b.next(), Some(Square(1)));
+        assert_eq!(b.next(), Some(Square(3)));
+        assert_eq!(b.next(), None);
+
+        assert_eq!(b.0, 0);
     }
 }

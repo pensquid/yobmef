@@ -1,6 +1,5 @@
 use crate::bitboard::BitBoard;
 use crate::chess::{Board, Color, Piece, Square};
-use crate::movegen::get_attacked_squares;
 
 // SHITTY SHIT HERE, JUST FOR EXPERIMENTATION, NOT FOR USE IN FINAL PROGRAM
 // Inspiration from:
@@ -157,8 +156,8 @@ pub fn get_score_ongoing(board: &Board) -> i16 {
     score += 30 * board.side_to_move.polarize(); // Side to move gets inherent advantage
 
     // This should probably account for how *many* pieces are attacking squares
-    let white_attacking = get_attacked_squares(board, Color::White);
-    let black_attacking = get_attacked_squares(board, Color::Black);
+    let white_attacking = board.attacked(Color::White);
+    let black_attacking = board.attacked(Color::Black);
     score += multiply_table(&white_attacking, ATTACK_VALUE_TABLE, 0);
     score -= multiply_table(&black_attacking, ATTACK_VALUE_TABLE, 0);
 

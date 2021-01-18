@@ -68,13 +68,7 @@ pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
 
 pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
     gen_moves_once();
-    let mut squares = Vec::new();
-    for sq_index in 0..64 {
-        let sq = Square(sq_index);
-        if board.get(sq) {
-            squares.push(sq);
-        }
-    }
+    let squares: Vec<Square> = board.collect();
 
     for coord in included.split(' ') {
         if !squares.contains(&Square::from_notation(coord).unwrap()) {

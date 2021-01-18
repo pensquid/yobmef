@@ -49,7 +49,7 @@ pub fn get_legal_moves(board: &Board) -> Vec<Movement> {
         .into_iter()
         .filter(|mv| {
             let after_move = board.make_move(mv);
-            let attacks = get_attacked_squares(&after_move, board.side_to_move.other());
+            let attacks = after_move.attacked(after_move.side_to_move);
 
             let only_our_king = 1 << after_move.king(board.side_to_move).0;
             let is_in_check = (attacks.0 & only_our_king).count_ones() > 0;
