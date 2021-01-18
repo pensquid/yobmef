@@ -22,6 +22,7 @@ pub struct Searcher {
     // Search statistics
     pub nodes: u64,
     pub pruned: u64,
+    pub cached: u64,
 }
 
 // Sorting is very important for alpha beta search pruning
@@ -39,33 +40,40 @@ impl Searcher {
         Searcher {
             nodes: 0,
             pruned: 0,
+            cached: 0,
 
             tp: HashMap::new(),
         }
     }
 
     // TODO: Quiet search
-    pub fn search(&mut self, board: &Board, depth: u16) -> SearchResult {
+    pub fn search(&mut self, board: &Board, max_depth: u16) -> SearchResult {
         self.nodes = 0;
         self.pruned = 0;
+        self.cached = 0;
 
-        let start = Instant::now();
-        let sr = self.alphabeta(board, depth, 0, i16::MIN, i16::MAX);
-        let end = Instant::now();
-        let took = end - start;
-        let nps = (self.nodes as f64 / took.as_secs_f64()) as u64;
+        let mut deepest = None;
 
-        println!(
-            "info depth {} score cp {} nodes {} nps {}",
-            depth, sr.eval, self.nodes, nps
-        );
+        for depth in 1..(max_depth + 1) {
+            let start = Instant::now();
+            let sr = self.alphabeta(board, depth, 0, i16::MIN, i16::MAX);
+            let end = Instant::now();
+            let took = end - start;
+            let nps = (self.nodes as f64 / took.as_secs_f64()) as u64;
+
+            println!(
+                "info depth {} score cp {} nodes {} nps {}",
+                depth, sr.eval, self.nodes, nps
+            );
+            deepest = Some(sr);
+        }
 
         // so we don't use infinite memory
         // TODO: Maintain TP between searches, via replacement strategies.
         // https://www.chessprogramming.org/Transposition_Table#Replacement_Strategies
         self.tp.clear();
 
-        sr
+        deepest.unwrap() // safe because we always run alphabeta at least once.
     }
 
     pub fn alphabeta(
@@ -77,10 +85,12 @@ impl Searcher {
         mut beta: i16,
     ) -> SearchResult {
         self.nodes += 1;
+
         let depth_to_go = max_depth - depth;
 
         if let Some(sr) = self.tp.get(board) {
             if sr.depth >= depth_to_go {
+                self.cached += 1;
                 return sr.clone();
             }
 
