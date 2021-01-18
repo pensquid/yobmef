@@ -215,3 +215,23 @@ impl Searcher {
         sr
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[ignore]
+    #[test]
+    fn test_sort_by_promise_mate() {
+        movegen::gen_moves_once();
+
+        let board =
+            Board::from_fen("rn1qkbnr/ppp2ppp/3p4/4p2Q/2B1P1b1/8/PPPP1PPP/RNB1K1NR w KQkq - 2 4")
+                .unwrap();
+
+        let mut moves = movegen::get_legal_moves(&board);
+        sort_by_promise(&board, &mut moves);
+
+        assert_eq!(moves[0], Movement::from_notation("h5f7").unwrap());
+    }
+}
