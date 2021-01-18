@@ -34,11 +34,7 @@ pub fn get_knight_attacks(board: &Board, color: Color) -> BitBoard {
     let my_pieces = *board.color_combined(color);
     let my_knights = *board.pieces(Piece::Knight) & my_pieces;
 
-    for from_sq_index in 0..64 {
-        let from_sq = Square(from_sq_index);
-        if !my_knights.get(from_sq) {
-            continue;
-        }
+    for from_sq in my_knights {
         attacks |= knight_moves(from_sq);
     }
 
@@ -48,21 +44,11 @@ pub fn get_knight_attacks(board: &Board, color: Color) -> BitBoard {
 pub fn get_knight_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
     let my_pieces = *board.color_combined(color);
     let my_knights = *board.pieces(Piece::Knight) & my_pieces;
-    let move_locations = !my_pieces;
 
-    for from_sq_index in 0..64 {
-        let from_sq = Square(from_sq_index);
-        if !my_knights.get(from_sq) {
-            continue;
-        }
-        let moves_bitboard = knight_moves(from_sq) & move_locations;
+    for from_sq in my_knights {
+        let moves_bitboard = knight_moves(from_sq) & !my_pieces;
 
-        for to_sq_index in 0..64 {
-            let to_sq = Square(to_sq_index);
-            if !moves_bitboard.get(to_sq) {
-                continue;
-            }
-
+        for to_sq in moves_bitboard {
             moves.push(Movement::new(from_sq, to_sq, None));
         }
     }

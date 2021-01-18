@@ -87,12 +87,7 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
         Color::Black => 0,
     };
 
-    for from_sq_index in 0..48 {
-        let from_sq = Square(from_sq_index + 8);
-        if !my_pawns.get(from_sq) {
-            continue;
-        }
-
+    for from_sq in my_pawns {
         let mut moves_bitboard = BitBoard::empty();
 
         // Attacks
@@ -114,13 +109,7 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
         moves_bitboard |= dbl_pushes;
 
         // Add all the moves
-        for to_sq_index in 0..64 {
-            let to_sq = Square(to_sq_index);
-
-            if !moves_bitboard.get(to_sq) {
-                continue;
-            }
-
+        for to_sq in moves_bitboard {
             if to_sq.rank() == promotion_rank {
                 moves.push(Movement::new(from_sq, to_sq, Some(Piece::Bishop)));
                 moves.push(Movement::new(from_sq, to_sq, Some(Piece::Rook)));
