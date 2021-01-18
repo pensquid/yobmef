@@ -35,6 +35,15 @@ pub fn sort_by_promise(board: &Board, moves: &mut Vec<Movement>) {
     };
 }
 
+// TODO: Move this to movement?
+fn moves_to_str(moves: Vec<Movement>) -> String {
+    moves
+        .iter()
+        .map(|mv| mv.to_notation())
+        .collect::<Vec<String>>()
+        .join(" ")
+}
+
 impl Searcher {
     pub fn new() -> Self {
         Searcher {
@@ -75,10 +84,15 @@ impl Searcher {
             let ab_start = Instant::now();
             let sr = self.alphabeta(board, depth, 0, i16::MIN, i16::MAX);
             let nps = (self.nodes as f64 / ab_start.elapsed().as_secs_f64()) as u64;
+            let pv = self.get_pv(board);
 
             println!(
-                "info depth {} score cp {} nodes {} nps {}",
-                depth, sr.eval, self.nodes, nps
+                "info depth {} score cp {} nodes {} nps {} pv {}",
+                depth,
+                sr.eval,
+                self.nodes,
+                nps,
+                moves_to_str(pv),
             );
             deepest = Some(sr.clone());
 
@@ -93,6 +107,22 @@ impl Searcher {
         self.tp.clear();
 
         deepest.unwrap() // safe because we always run alphabeta at least once.
+    }
+
+    // TODO: Perhaps keep pv state and update from alphabeta?
+    // Need to see how stockfish does it.
+    fn get_pv(&self, board: &Board) -> Vec<Movement> {
+        let mut moves = Vec::new();
+        let mut curr = board.clone();
+        while let Some(sr) = self.tp.get(&curr) {
+            if let Some(mv) = &sr.mv {
+                curr.make_move_mut(&mv);
+                moves.push(mv.clone());
+            } else {
+                break;
+            }
+        }
+        moves
     }
 
     pub fn alphabeta(
