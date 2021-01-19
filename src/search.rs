@@ -83,6 +83,12 @@ impl Searcher {
     {
         self.reset_stats();
 
+        // so we don't use infinite memory
+        // TODO: Maintain TP between searches, via replacement strategies.
+        // https://www.chessprogramming.org/Transposition_Table#Replacement_Strategies
+        // NOTE: Tests rely on TP being available after search to verify PV.
+        self.tp.clear();
+
         let mut deepest = None;
 
         // Bound ply because of possible recursion limit in endgames.
@@ -109,28 +115,37 @@ impl Searcher {
             }
         }
 
-        // so we don't use infinite memory
-        // TODO: Maintain TP between searches, via replacement strategies.
-        // https://www.chessprogramming.org/Transposition_Table#Replacement_Strategies
-        self.tp.clear();
-
         deepest.unwrap() // safe because we always run alphabeta at least once.
     }
 
     // TODO: Perhaps keep pv state and update from alphabeta?
     // Need to see how stockfish does it.
+    // NOTE: If we aren't careful, transpositions will cause an infinite loop.
     fn get_pv(&self, board: &Board) -> Vec<Movement> {
+        use std::collections::HashSet;
+
         let mut moves = Vec::new();
         let mut curr = board.clone();
-        while let Some(sr) = self.tp.get(&curr) {
-            if let Some(mv) = &sr.mv {
-                curr.make_move_mut(&mv);
-                moves.push(mv.clone());
-            } else {
+        let mut seen = HashSet::new();
+
+        while let Some(mv) = self.get_pv_next(&curr) {
+            curr.make_move_mut(&mv);
+            if seen.contains(&curr) {
+                // eprintln!("transposition!\n{}\nlastmove: {}", curr, mv);
                 break;
             }
+            seen.insert(curr.clone());
+            moves.push(mv.clone());
         }
+
         moves
+    }
+
+    // Get the next PV move
+    // NOTE: This assumes the TP will always hold the deepest search for a given board.
+    fn get_pv_next(&self, board: &Board) -> Option<&Movement> {
+        let sr = self.tp.get(board)?;
+        sr.mv.as_ref()
     }
 
     pub fn alphabeta(
@@ -212,6 +227,7 @@ impl Searcher {
         } else {
             for mv in moves {
                 let score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
+
                 if score.eval < sr.eval {
                     sr.eval = score.eval;
                     sr.mv = Some(mv);
@@ -234,6 +250,7 @@ impl Searcher {
 mod tests {
     use super::*;
     use crate::movegen;
+    use crate::movegen::helpers::assert_moves;
 
     #[ignore]
     #[test]
@@ -248,5 +265,65 @@ mod tests {
         sort_by_promise(&board, &mut moves);
 
         assert_eq!(moves[0], Movement::from_notation("h5f7").unwrap());
+    }
+
+    #[test]
+    fn test_pv_deepest_startpos() {
+        movegen::gen_moves_once();
+        let depth = 4;
+
+        // TODO: Cleanup this ugly test.
+
+        // The PV should always contain the deepest search for a node.
+        // Even when transposition's occur.
+        let mut s = Searcher::new();
+        let mut board = Board::from_start_pos();
+        let sr = s.search_depth(&board, depth);
+        let sr_tp = s.tp.get(&board).unwrap().clone();
+        assert_eq!(&sr, &sr_tp);
+
+        board.make_move_mut(&sr_tp.mv.unwrap());
+        let sr_tp = s.tp.get(&board).unwrap().clone();
+        assert_eq!(sr_tp.depth, depth - 1);
+
+        board.make_move_mut(&sr_tp.mv.unwrap());
+        let sr_tp = s.tp.get(&board).unwrap().clone();
+        assert_eq!(sr_tp.depth, depth - 2);
+    }
+
+    #[test]
+    fn test_pv_deepest_mate2() {
+        movegen::gen_moves_once();
+
+        let mut s = Searcher::new();
+        let board = Board::from_fen("8/p4p1k/3p1P2/1p1br3/3p4/1Pr5/P6K/8 b - - 0 1").unwrap();
+        let sr = s.search_depth(&board, 5);
+        let sr_tp = s.tp.get(&board).unwrap();
+        assert_eq!(&sr, sr_tp);
+    }
+
+    #[test]
+    fn test_pv_legal_mate() {
+        movegen::gen_moves_once();
+
+        // The principled variation should always be legal.
+        // Including when there is a forced mate, and depth exceeds it.
+
+        let board =
+            Board::from_fen("r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4")
+                .unwrap();
+
+        let mut s = Searcher::new();
+        s.search_depth(&board, 4);
+        let pv = s.get_pv(&board);
+
+        assert_moves(&board, pv, "h5f7");
+
+        let board = Board::from_fen("8/p4p1k/3p1P2/1p1br3/3p4/1Pr5/P6K/8 b - - 0 1").unwrap();
+        // Reusing searcher is fine, it's what the engine would do
+        // depth 5 so after mate it has a chance to fuckup with an illegal move.
+        s.search_depth(&board, 5);
+        let pv = s.get_pv(&board);
+        assert_moves(&board, pv, "e5e2 h2g1 c3c1");
     }
 }

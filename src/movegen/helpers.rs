@@ -87,16 +87,15 @@ pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
     }
 }
 
-pub fn assert_moves(board: &Board, mg: MoveGen, moves: &str) {
+pub fn assert_moves(board: &Board, mut got_moves: Vec<Movement>, moves: &str) {
     let mut want_moves = vec_moves(moves);
-    let mut got_moves: Vec<Movement> = mg.collect();
     want_moves.sort_by_key(|m| m.hash());
     got_moves.sort_by_key(|m| m.hash());
 
     if want_moves != got_moves {
         eprintln!("{:?} to move\n{}", board.side_to_move, board);
-        eprintln!("got legal: {}", moves_to_str(&got_moves));
-        eprintln!("want legal: {}", moves_to_str(&want_moves));
+        eprintln!("got moves: {}", moves_to_str(&got_moves));
+        eprintln!("want moves: {}", moves_to_str(&want_moves));
         panic!("move vectors don't match");
     }
 }

@@ -2,7 +2,8 @@ use crate::chess::{Board, Movement};
 use crate::{bitboard::BitBoard, chess::Color};
 use std::sync::Once;
 
-mod helpers;
+// FIXME: Move generic test helpers out of movegen.
+pub mod helpers;
 mod king;
 mod knight;
 mod magic;
@@ -119,16 +120,16 @@ mod tests {
     #[test]
     fn test_move_into_check() {
         let board = Board::from_fen("K7/2k5/8/8/8/8/8/8 w - - 0 1").unwrap();
-        assert_moves(&board, MoveGen::new_legal(&board), "a8a7");
+        assert_moves(&board, MoveGen::new_legal(&board).collect(), "a8a7");
 
         let board = Board::from_fen("7k/8/5P2/6K1/8/8/8/8 b - - 0 1").unwrap();
-        assert_moves(&board, MoveGen::new_legal(&board), "h8h7 h8g8");
+        assert_moves(&board, MoveGen::new_legal(&board).collect(), "h8h7 h8g8");
     }
 
     #[test]
     fn test_move_in_check() {
         let board = Board::from_fen("7K/6b1/6k1/8/8/8/8/8 w - - 0 1").unwrap();
-        assert_moves(&board, MoveGen::new_legal(&board), "h8g8");
+        assert_moves(&board, MoveGen::new_legal(&board).collect(), "h8g8");
     }
 
     #[test]
@@ -136,7 +137,7 @@ mod tests {
         let board = Board::from_fen("3K4/8/6k1/3N2b1/8/8/8/8 w - - 0 1").unwrap();
         assert_moves(
             &board,
-            MoveGen::new_legal(&board),
+            MoveGen::new_legal(&board).collect(),
             "d5e7 d5f6 d8d7 d8e8 d8c8 d8c7",
         );
     }
@@ -144,7 +145,7 @@ mod tests {
     #[test]
     fn test_block_check_double_pawn_push() {
         let board = Board::from_fen("8/2r5/6k1/6r1/3K2r1/6r1/4P3/8 w - - 0 1").unwrap();
-        assert_moves(&board, MoveGen::new_legal(&board), "e2e4");
+        assert_moves(&board, MoveGen::new_legal(&board).collect(), "e2e4");
     }
 
     #[test]
@@ -152,7 +153,7 @@ mod tests {
         let board = Board::from_fen("8/8/2p2k2/5n2/1N1P4/1K6/8/8 w - - 0 1").unwrap();
         assert_moves(
             &board,
-            MoveGen::new_legal(&board),
+            MoveGen::new_legal(&board).collect(),
             "b3b2 b3a2 b3c2 b3c3 b3a3 b3a4 b3c4 b4c2 b4a2 b4a6 b4c6 b4d3 b4d5 d4d5",
         );
     }
@@ -167,6 +168,6 @@ mod tests {
         let attacked = board.attacked(board.side_to_move);
         let enemy_pieces = board.color_combined(board.side_to_move.other());
         legal_iter.set_iterator_mask(attacked & enemy_pieces);
-        assert_moves(&board, legal_iter, "c4f7 h5e5 h5f7 h5h7");
+        assert_moves(&board, legal_iter.collect(), "c4f7 h5e5 h5f7 h5h7");
     }
 }

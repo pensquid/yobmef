@@ -20,4 +20,12 @@ impl Color {
             Color::Black => -1,
         }
     }
+
+    #[inline]
+    pub fn as_char(&self) -> char {
+        match self {
+            Color::White => 'w',
+            Color::Black => 'b',
+        }
+    }
 }
