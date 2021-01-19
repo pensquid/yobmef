@@ -29,7 +29,7 @@ pub struct Searcher {
 pub fn sort_by_promise(board: &Board, moves: &mut Vec<Movement>) {
     let legal_move_count = moves.len();
 
-    moves.sort_by_key(|m| eval::get_score(&board.make_move(m), legal_move_count));
+    moves.sort_by_cached_key(|m| eval::get_score(&board.make_move(m), legal_move_count));
     if board.side_to_move == Color::White {
         moves.reverse()
     };
