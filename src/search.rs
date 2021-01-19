@@ -111,18 +111,32 @@ impl Searcher {
 
     // TODO: Perhaps keep pv state and update from alphabeta?
     // Need to see how stockfish does it.
+    // NOTE: If we aren't careful, transpositions will cause an infinite loop.
     fn get_pv(&self, board: &Board) -> Vec<Movement> {
+        use std::collections::HashSet;
+
         let mut moves = Vec::new();
         let mut curr = board.clone();
-        while let Some(sr) = self.tp.get(&curr) {
-            if let Some(mv) = &sr.mv {
-                curr.make_move_mut(&mv);
-                moves.push(mv.clone());
-            } else {
+        let mut seen = HashSet::new();
+
+        while let Some(mv) = self.get_pv_next(&curr) {
+            curr.make_move_mut(&mv);
+            if seen.contains(&curr) {
+                // eprintln!("transposition!\n{}\nlastmove: {}", curr, mv);
                 break;
             }
+            seen.insert(curr.clone());
+            moves.push(mv.clone());
         }
+
         moves
+    }
+
+    // Get the next PV move
+    // NOTE: This assumes the TP will always hold the deepest search for a given board.
+    fn get_pv_next(&self, board: &Board) -> Option<&Movement> {
+        let sr = self.tp.get(board)?;
+        sr.mv.as_ref()
     }
 
     pub fn alphabeta(
@@ -198,6 +212,7 @@ impl Searcher {
             for mv in moves {
                 let score =
                     self.alphabeta(&board.make_move(&mv), max_depth, depth + 1, alpha, beta);
+
                 if score.eval < sr.eval {
                     sr.eval = score.eval;
                     sr.mv = Some(mv);
