@@ -5,8 +5,12 @@ use yobmef::search::Searcher;
 
 fn main() {
     gen_moves_once();
-
-    let board = Board::from_start_pos();
+    let fen = std::env::args().skip(1).next();
+    let board = if let Some(fen) = fen {
+        Board::from_fen(&fen).expect("invalid fen")
+    } else {
+        Board::from_start_pos()
+    };
 
     for depth in 3..8 {
         eprintln!("depth: {}", depth);
