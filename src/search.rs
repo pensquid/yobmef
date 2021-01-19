@@ -185,7 +185,31 @@ impl Searcher {
         }
 
         if depth < 0 {
-            // Quiet search! retain only captures
+            // Quiet search!
+            let score = eval::get_score(board, is_game_over);
+            let sr = SearchResult {
+                eval: score,
+                mv: None,
+                depth: 0,
+            };
+
+            // It is our move, so if the static score is already better then
+            // Our previous best score, we can just return the static eval.
+            // TODO: Refactor into a negamax framework to cleanup this code.
+            // FIXME: If we're in zugzwang, then this will prematurely prune.
+            match board.side_to_move {
+                Color::White => {
+                    if score >= alpha {
+                        return sr;
+                    }
+                }
+                Color::Black => {
+                    if score <= beta {
+                        return sr;
+                    }
+                }
+            }
+
             moves.retain(|mv| board.is_capture(&mv));
 
             if moves.len() == 0 {
