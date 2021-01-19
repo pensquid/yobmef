@@ -159,23 +159,6 @@ impl Searcher {
         let mut moves: Vec<Movement> = MoveGen::new_legal(board).collect();
         let is_game_over = moves.len() == 0;
 
-        if depth < 0 {
-            // Quiet search! retain only loud nodes
-            moves.retain(|mv| {
-                let new_board = board.make_move(&mv);
-                new_board.in_check() || board.is_capture(&mv)
-            });
-
-            // cursed aaaaaa
-            if !is_game_over && moves.len() == 0 {
-                return SearchResult {
-                    eval: eval::get_score(board, is_game_over),
-                    mv: None,
-                    depth: 0,
-                };
-            }
-        }
-
         // NOTE: We don't store the static eval in the TP table, because we aren't whores.
         if is_game_over {
             return SearchResult {
@@ -184,6 +167,20 @@ impl Searcher {
                 mv: None,
                 depth: 0,
             };
+        }
+
+        if depth < 0 {
+            // Quiet search! retain only captures
+            moves.retain(|mv| board.is_capture(&mv));
+
+            if moves.len() == 0 {
+                // End of QS, no captures remain
+                return SearchResult {
+                    eval: eval::get_score(board, is_game_over),
+                    mv: None,
+                    depth: 0,
+                };
+            }
         }
 
         sort_by_promise(board, &mut moves);
