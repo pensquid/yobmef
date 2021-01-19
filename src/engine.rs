@@ -56,7 +56,7 @@ impl Engine {
             Color::White => (opts.white_time, opts.white_increment),
             Color::Black => (opts.black_time, opts.black_increment),
         };
-        // default to as if we had 10m no inc for correspondence games.
+        // Default to as if we had 10m no inc for correspondence games.
         let our_time = our_time.unwrap_or(600_000);
         let our_increment = our_increment.unwrap_or(0);
 
@@ -135,7 +135,7 @@ mod tests {
 
     #[test]
     fn test_think_time() {
-        // reasonable bounds on thinking time
+        // Reasonable bounds on thinking time
 
         let engine = Engine::new();
         let mut opts = uci::Go::empty();
@@ -143,7 +143,7 @@ mod tests {
         // black_time: 300_000,
         let t = engine.thinking_time(opts).as_millis();
 
-        // assume you will think between 1s and 10s per move in a 5 minute game
+        // Assume you will think between 1s and 10s per move in a 5 minute game
         assert!(1_000 < t && t < 10_000, "1s < t({}s) < 10s", t / 1000);
     }
 }
