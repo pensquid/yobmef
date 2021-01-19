@@ -30,9 +30,9 @@ pub struct Searcher {
 
 // Sorting is very important for alpha beta search pruning
 pub fn sort_by_promise(board: &Board, moves: &mut Vec<Movement>) {
-    let legal_move_count = moves.len();
+    let is_game_over = moves.len() == 0;
 
-    moves.sort_by_cached_key(|m| eval::get_score(&board.make_move(m), legal_move_count));
+    moves.sort_by_cached_key(|m| eval::get_score(&board.make_move(m), is_game_over));
     if board.side_to_move == Color::White {
         moves.reverse()
     };
@@ -152,6 +152,23 @@ impl Searcher {
         let mut moves: Vec<Movement> = MoveGen::new_legal(board).collect();
         let is_game_over = moves.len() == 0;
 
+        if depth < 0 {
+            // Quiet search! remove anything that is not a capture or check
+            moves.retain(|mv| {
+                let new_board = board.make_move(&mv);
+                new_board.in_check() || board.is_capture(&mv)
+            });
+
+            // cursed aaaaaa
+            if !is_game_over && moves.len() == 0 {
+                return SearchResult {
+                    eval: eval::get_score(board, is_game_over),
+                    mv: None,
+                    depth: 0,
+                };
+            }
+        }
+
         // NOTE: We don't store the static eval in the TP table, because we aren't whores.
         if is_game_over {
             return SearchResult {
@@ -160,14 +177,15 @@ impl Searcher {
                 mv: None,
                 depth: 0,
             };
-        } else if depth == 0 {
-            // TODO: Quiet search
+        }
 
-            return SearchResult {
-                eval: eval::get_score(board, moves.len()),
-                mv: None,
-                depth: 0,
-            };
+        if depth == 0 {
+            // Start Quiet search, negative depth
+            let mut sr = self.alphabeta(board, depth - 1, alpha, beta);
+            sr.depth = 0;
+            // sr.mv = None; // I don't think I need to remove this
+
+            return sr;
         }
 
         sort_by_promise(board, &mut moves);
