@@ -8,7 +8,7 @@ fn main() {
 
     let board = Board::from_start_pos();
 
-    for depth in 3..7 {
+    for depth in 3..8 {
         eprintln!("depth: {}", depth);
         let mut searcher = Searcher::new();
 
