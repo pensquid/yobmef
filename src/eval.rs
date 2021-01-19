@@ -167,12 +167,14 @@ pub fn get_score_ongoing(board: &Board) -> i16 {
 pub fn get_score(board: &Board, game_over: bool) -> i16 {
     // NOTE: Make sure eval is never more then MATE when it is checkmate,
     // Otherwise the engine will delay mate to capture pieces.
-    if game_over && board.in_check() {
-        MATE * board.side_to_move.other().polarize()
-    } else if game_over {
-        get_score_ongoing(board)
+    if game_over {
+        if board.in_check() {
+            MATE * board.side_to_move.other().polarize()
+        } else {
+            0
+        }
     } else {
-        0
+        get_score_ongoing(board)
     }
 }
 

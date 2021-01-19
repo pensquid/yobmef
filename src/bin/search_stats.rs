@@ -17,9 +17,10 @@ fn main() {
         let took = Instant::now() - start;
 
         eprintln!(
-            "cached {} pruned {} took {}ms\n",
+            "cached {} pruned {} qs_nodes {} took {}ms\n",
             searcher.cached,
             searcher.pruned,
+            searcher.qs_nodes,
             took.as_millis()
         );
     }

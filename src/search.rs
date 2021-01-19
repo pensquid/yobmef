@@ -20,7 +20,8 @@ pub struct Searcher {
     pub tp: HashMap<Board, SearchResult>,
 
     // Search statistics
-    pub nodes: u64,
+    pub nodes: u64, // excluding qs!
+    pub qs_nodes: u64,
     pub pruned: u64,
     pub cached: u64,
 
@@ -51,6 +52,7 @@ impl Searcher {
     pub fn new() -> Self {
         Searcher {
             nodes: 0,
+            qs_nodes: 0,
             pruned: 0,
             cached: 0,
             tp: HashMap::new(),
@@ -62,6 +64,7 @@ impl Searcher {
     fn reset_stats(&mut self) {
         self.nodes = 0;
         self.pruned = 0;
+        self.qs_nodes = 0;
         self.cached = 0;
     }
 
@@ -137,7 +140,11 @@ impl Searcher {
         mut alpha: i16,
         mut beta: i16,
     ) -> SearchResult {
-        self.nodes += 1;
+        if depth < 0 {
+            self.qs_nodes += 1;
+        } else {
+            self.nodes += 1;
+        }
 
         if let Some(sr) = self.tp.get(board) {
             if sr.depth >= depth {
@@ -153,7 +160,7 @@ impl Searcher {
         let is_game_over = moves.len() == 0;
 
         if depth < 0 {
-            // Quiet search! remove anything that is not a capture or check
+            // Quiet search! retain only loud nodes
             moves.retain(|mv| {
                 let new_board = board.make_move(&mv);
                 new_board.in_check() || board.is_capture(&mv)
@@ -179,21 +186,12 @@ impl Searcher {
             };
         }
 
-        if depth == 0 {
-            // Start Quiet search, negative depth
-            let mut sr = self.alphabeta(board, depth - 1, alpha, beta);
-            sr.depth = 0;
-            // sr.mv = None; // I don't think I need to remove this
-
-            return sr;
-        }
-
         sort_by_promise(board, &mut moves);
 
         let mut sr = SearchResult {
             eval: -i16::MAX * board.side_to_move.polarize(),
             mv: None,
-            depth: depth,
+            depth: i16::max(depth, 0), // avoid negative depth in QS
         };
 
         // This is ugly, normally I would use higher order functions
