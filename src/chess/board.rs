@@ -222,6 +222,56 @@ impl Board {
         Some(board)
     }
 
+    // TODO: Clean up, this is awful code.
+    pub fn to_fen(&self) -> String {
+        let mut buf = String::new();
+
+        for rank in 0..8 {
+            // Fen starts at the top (black side)
+            let rank = 7 - rank;
+
+            let mut since_last_piece = 0;
+            for file in 0..8 {
+                let sq = Square::new(rank, file);
+                if let Some(piece) = self.piece_on(sq) {
+                    if since_last_piece != 0 {
+                        buf.push_str(&since_last_piece.to_string());
+                        since_last_piece = 0;
+                    }
+                    buf.push(piece.as_char_color(self.color_on(sq).unwrap()));
+                } else {
+                    since_last_piece += 1;
+                }
+            }
+            if since_last_piece != 0 {
+                buf.push_str(&since_last_piece.to_string());
+            }
+
+            buf.push('/');
+        }
+        buf.pop();
+        buf.push(' ');
+        buf.push(self.side_to_move.as_char());
+        buf.push(' ');
+
+        // TODO: Handle castling
+        buf.push_str("KQkq");
+
+        // En-pasasnt
+        buf.push(' ');
+        buf.push_str(
+            &self
+                .en_passant
+                .map(|sq| sq.to_notation())
+                .unwrap_or("-".to_string()),
+        );
+
+        // TODO: Halfmove clock, Fullmove number
+        buf.push_str(" 0 1");
+
+        buf
+    }
+
     pub fn from_start_pos() -> Board {
         Board::from_fen(STARTING_FEN).unwrap()
     }
@@ -609,5 +659,25 @@ mod tests {
         // it would hide on another pawn move.
         board.make_move_mut(&Movement::from_notation("g8f6").unwrap());
         assert_eq!(board.en_passant, None);
+    }
+
+    #[test]
+    fn test_to_fen_startpos() {
+        gen_moves_once();
+
+        let board = Board::from_start_pos();
+        assert_eq!(board.to_fen(), STARTING_FEN);
+    }
+
+    #[test]
+    fn test_to_fen_e2e4() {
+        gen_moves_once();
+
+        let mut board = Board::from_start_pos();
+        board.make_move_mut(&Movement::from_notation("e2e4").unwrap());
+        assert_eq!(
+            board.to_fen(),
+            "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        );
     }
 }
