@@ -35,7 +35,8 @@ impl fmt::Display for Board {
             write!(f, "\n")?;
         }
 
-        write!(f, "  a b c d e f g h")
+        write!(f, "  a b c d e f g h\n")?;
+        write!(f, "fen: {}\n", self.to_fen())
     }
 }
 
