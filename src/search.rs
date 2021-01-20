@@ -10,7 +10,7 @@ pub struct SearchResult {
     pub mv: Option<Movement>, // The best move
 
     // Depth of this evaluation, with respect to the root node.
-    pub depth: u16,
+    pub depth: i16,
 }
 
 #[derive(Debug)]
@@ -20,16 +20,20 @@ pub struct Searcher {
     pub tp: HashMap<Board, SearchResult>,
 
     // Search statistics
-    pub nodes: u64,
+    pub nodes: u64, // excluding qs!
+    pub qs_nodes: u64,
     pub pruned: u64,
     pub cached: u64,
+
+    // Used so I don't pass fucking everything as a parameter to alphabeta
+    pub start_depth: i16, // start depth of this ID iteration
 }
 
 // Sorting is very important for alpha beta search pruning
 pub fn sort_by_promise(board: &Board, moves: &mut Vec<Movement>) {
-    let legal_move_count = moves.len();
+    let is_game_over = moves.len() == 0;
 
-    moves.sort_by_cached_key(|m| eval::get_score(&board.make_move(m), legal_move_count));
+    moves.sort_by_cached_key(|m| eval::get_score(&board.make_move(m), is_game_over));
     if board.side_to_move == Color::White {
         moves.reverse()
     };
@@ -48,24 +52,26 @@ impl Searcher {
     pub fn new() -> Self {
         Searcher {
             nodes: 0,
+            qs_nodes: 0,
             pruned: 0,
             cached: 0,
-
             tp: HashMap::new(),
+
+            start_depth: 0,
         }
     }
 
     fn reset_stats(&mut self) {
         self.nodes = 0;
         self.pruned = 0;
+        self.qs_nodes = 0;
         self.cached = 0;
     }
 
-    pub fn search_depth(&mut self, board: &Board, depth: u16) -> SearchResult {
+    pub fn search_depth(&mut self, board: &Board, depth: i16) -> SearchResult {
         self.search(board, |sr| sr.depth >= depth)
     }
 
-    // TODO: Quiet search
     pub fn search_timed(&mut self, board: &Board, thinking_time: Duration) -> SearchResult {
         let start = Instant::now();
         self.search(board, |_sr| start.elapsed() > thinking_time)
@@ -87,8 +93,10 @@ impl Searcher {
 
         // Bound ply because of possible recursion limit in endgames.
         for depth in 1..1000 {
+            self.start_depth = depth;
+
             let ab_start = Instant::now();
-            let sr = self.alphabeta(board, depth, 0, i16::MIN, i16::MAX);
+            let sr = self.alphabeta(board, depth, i16::MIN, i16::MAX);
             let nps = (self.nodes as f64 / ab_start.elapsed().as_secs_f64()) as u64;
             let pv = self.get_pv(board);
 
@@ -143,17 +151,18 @@ impl Searcher {
     pub fn alphabeta(
         &mut self,
         board: &Board,
-        max_depth: u16,
-        depth: u16,
+        depth: i16,
         mut alpha: i16,
         mut beta: i16,
     ) -> SearchResult {
-        self.nodes += 1;
-
-        let depth_to_go = max_depth - depth;
+        if depth < 0 {
+            self.qs_nodes += 1;
+        } else {
+            self.nodes += 1;
+        }
 
         if let Some(sr) = self.tp.get(board) {
-            if sr.depth >= depth_to_go {
+            if sr.depth >= depth {
                 self.cached += 1;
                 return sr.clone();
             }
@@ -165,21 +174,52 @@ impl Searcher {
         let mut moves: Vec<Movement> = MoveGen::new_legal(board).collect();
         let is_game_over = moves.len() == 0;
 
-        if depth >= max_depth || is_game_over {
-            let mut sr = SearchResult {
-                eval: eval::get_score(board, moves.len()),
+        // NOTE: We don't store the static eval in the TP table, because we aren't whores.
+        if is_game_over {
+            return SearchResult {
+                // The bigger depth to go, the better
+                eval: (depth + eval::MATE) * board.side_to_move.other().polarize(),
                 mv: None,
                 depth: 0,
             };
-            if i16::abs(sr.eval) == eval::MATE {
-                // if side_to_move = White:
-                //   Black won, so we add depth to make black prefer shorter mates.
-                // Ditto for if side_to_move = Black.
-                sr.eval += (depth as i16) * board.side_to_move.polarize()
+        }
+
+        if depth < 0 {
+            // Quiet search!
+            let score = eval::get_score(board, is_game_over);
+            let sr = SearchResult {
+                eval: score,
+                mv: None,
+                depth: 0,
+            };
+
+            // It is our move, so if the static score is already better then
+            // Our previous best score, we can just return the static eval.
+            // TODO: Refactor into a negamax framework to cleanup this code.
+            // FIXME: If we're in zugzwang, then this will prematurely prune.
+            match board.side_to_move {
+                Color::White => {
+                    if score >= alpha {
+                        return sr;
+                    }
+                }
+                Color::Black => {
+                    if score <= beta {
+                        return sr;
+                    }
+                }
             }
-            // We don't store the static eval in the TP table, because
-            // looking it up would likely take longer then re-computing it!
-            return sr;
+
+            moves.retain(|mv| board.is_capture(&mv));
+
+            if moves.len() == 0 {
+                // End of QS, no captures remain
+                return SearchResult {
+                    eval: eval::get_score(board, is_game_over),
+                    mv: None,
+                    depth: 0,
+                };
+            }
         }
 
         sort_by_promise(board, &mut moves);
@@ -187,7 +227,7 @@ impl Searcher {
         let mut sr = SearchResult {
             eval: -i16::MAX * board.side_to_move.polarize(),
             mv: None,
-            depth: depth_to_go,
+            depth: i16::max(depth, 0), // avoid negative depth in QS
         };
 
         // This is ugly, normally I would use higher order functions
@@ -196,8 +236,7 @@ impl Searcher {
 
         if board.side_to_move == Color::White {
             for mv in moves {
-                let score =
-                    self.alphabeta(&board.make_move(&mv), max_depth, depth + 1, alpha, beta);
+                let score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
                 if score.eval > sr.eval {
                     sr.eval = score.eval;
                     sr.mv = Some(mv);
@@ -211,8 +250,7 @@ impl Searcher {
             }
         } else {
             for mv in moves {
-                let score =
-                    self.alphabeta(&board.make_move(&mv), max_depth, depth + 1, alpha, beta);
+                let score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
 
                 if score.eval < sr.eval {
                     sr.eval = score.eval;

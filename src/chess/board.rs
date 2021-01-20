@@ -63,6 +63,12 @@ impl Board {
         (our_king & attacked).0 != 0
     }
 
+    pub fn is_capture(&self, mv: &Movement) -> bool {
+        let to_square_bb = BitBoard::from_square(mv.to_square);
+        let enemy_pieces = self.color_combined(self.side_to_move.other());
+        to_square_bb & enemy_pieces != BitBoard::empty()
+    }
+
     // TODO: Needed?
     pub fn other_side(&self) -> Self {
         let mut board = self.clone();

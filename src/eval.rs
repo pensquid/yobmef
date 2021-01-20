@@ -68,8 +68,8 @@ const QUEEN_VALUE_TABLE: [i16; 64] = [
 
 #[rustfmt::skip]
 const KING_VALUE_TABLE_MIDDLEGAME: [i16; 64] = [
-     20,  200, 180,  0,   0,   10,  180,  20,
-     20,  20,  0,    0,   0,   0,   20,   20,
+     20,  50,  40,    0,   0,  10,  50,   20,
+     20,  20,   0,    0,   0,   0,  20,   20,
     -10, -20, -20,  -20, -20, -20, -20,  -10,
     -20, -30, -30,  -40, -40, -30, -30,  -20,
     -30, -40, -40,  -50, -50, -40, -40,  -30,
@@ -164,15 +164,17 @@ pub fn get_score_ongoing(board: &Board) -> i16 {
     score
 }
 
-pub fn get_score(board: &Board, legal_move_count: usize) -> i16 {
+pub fn get_score(board: &Board, game_over: bool) -> i16 {
     // NOTE: Make sure eval is never more then MATE when it is checkmate,
     // Otherwise the engine will delay mate to capture pieces.
-    if legal_move_count == 0 && board.in_check() {
-        MATE * board.side_to_move.other().polarize()
-    } else if legal_move_count > 0 {
-        get_score_ongoing(board)
+    if game_over {
+        if board.in_check() {
+            MATE * board.side_to_move.other().polarize()
+        } else {
+            0
+        }
     } else {
-        0
+        get_score_ongoing(board)
     }
 }
 
@@ -189,7 +191,7 @@ mod tests {
         let mut b = Board::from_start_pos();
         b.make_move_mut(&Movement::from_notation("e2e4").expect("e2e4 move is valid"));
 
-        let score = get_score(&b, MoveGen::new_legal(&b).count());
+        let score = get_score(&b, MoveGen::new_legal(&b).count() == 0);
         eprintln!("score: {}", score);
         assert!(score > 0); // White should have the advantage
     }
@@ -201,7 +203,7 @@ mod tests {
         let b =
             Board::from_fen("r1b1kb1r/pppp1pp1/2n5/1B2p3/4PP2/6p1/PPPP2Pq/RNBQNRK1 w kq f3 0 8")
                 .unwrap();
-        let score = get_score(&b, MoveGen::new_legal(&b).count());
+        let score = get_score(&b, MoveGen::new_legal(&b).count() == 0);
 
         eprintln!("board:\n{}", b);
         eprintln!("score (white in checkmate) = {}", score);
@@ -213,7 +215,7 @@ mod tests {
         gen_moves_once();
 
         let b = Board::from_fen("k1R5/8/1K6/8/8/8/8/8 b - - 0 1").unwrap();
-        let score = get_score(&b, MoveGen::new_legal(&b).count());
+        let score = get_score(&b, MoveGen::new_legal(&b).count() == 0);
 
         eprintln!("board:\n{}", b);
         eprintln!("score (black in checkmate) = {}", score);
@@ -227,9 +229,9 @@ mod tests {
         let mut b =
             Board::from_fen("rnbqkb1r/ppp2ppp/3p1n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4")
                 .unwrap();
-        let score_1 = get_score(&b, MoveGen::new_legal(&b).count());
+        let score_1 = get_score(&b, MoveGen::new_legal(&b).count() == 0);
         b.make_move_mut(&Movement::from_notation("e1g1").unwrap());
-        let score_2 = get_score(&b, MoveGen::new_legal(&b).count());
+        let score_2 = get_score(&b, MoveGen::new_legal(&b).count() == 0);
         println!("{} should be > {}", score_2, score_1);
         assert!(score_2 > score_1);
     }
