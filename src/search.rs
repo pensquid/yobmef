@@ -176,9 +176,17 @@ impl Searcher {
 
         // NOTE: We don't store the static eval in the TP table, because we aren't whores.
         if is_game_over {
+            // Easier to inline instead of calling `eval::get_score`
+            // and then have to check if it returned eval::MATE.
+            let score = if board.in_check() {
+                (depth + eval::MATE) * board.side_to_move.other().polarize()
+            } else {
+                0
+            };
+
             return SearchResult {
                 // The bigger depth to go, the better
-                eval: (depth + eval::MATE) * board.side_to_move.other().polarize(),
+                eval: score,
                 mv: None,
                 depth: 0,
             };
