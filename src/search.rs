@@ -228,7 +228,7 @@ impl Searcher {
             if moves.len() == 0 {
                 // End of QS, no captures remain
                 return SearchResult {
-                    eval: eval::get_score(board, is_game_over),
+                    eval: score,
                     mv: None,
                     depth: 0,
                 };
