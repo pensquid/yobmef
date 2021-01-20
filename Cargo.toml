@@ -10,13 +10,6 @@ default-run = "yobmef"
 [dependencies]
 rand = "^0.8.2"
 
-[dev-dependencies]
-criterion = "0.3"
-
-[[bench]]
-name = "eval"
-harness = false
-
 [profile.test]
 opt-level = 3
 
