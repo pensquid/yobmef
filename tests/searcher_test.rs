@@ -143,16 +143,21 @@ mod searcher {
         want: "b3c2",
     );
 
-    // TODO: Add back once search is improved.
-    // test!(
-    //     name: win_rook_in_4, // 8 ply
-    //     fen: "2br2k1/4pp1p/6pB/8/8/2q2P2/P1PrQ1PP/1R1R2K1 b - - 0 1",
-    //     want: "c3d4",
-    // );
+    test!(
+        name: win_rook_in_4, // 8 ply
+        fen: "2br2k1/4pp1p/6pB/8/8/2q2P2/P1PrQ1PP/1R1R2K1 b - - 0 1",
+        want: "c3d4",
+    );
 
-    // test!(
-    //     name: mate_in_4, // 8 ply
-    //     fen: "2q4k/1p4pp/7r/pP2B3/P3P1P1/1QP2pRn/5P1K/3R4 b - - 0 30",
-    //     want: "h3f4",
-    // );
+    test!(
+        name: useless_king_move,
+        fen: "5rk1/p1p1p2p/4bp2/2n5/8/1PqBb1P1/P1PNP2P/1R1QK2R b K - 4 18",
+        not: "g8h8",
+    );
+
+    test!(
+        name: mate_in_4, // 8 ply
+        fen: "2q4k/1p4pp/7r/pP2B3/P3P1P1/1QP2pRn/5P1K/3R4 b - - 0 30",
+        want: "h3f4",
+    );
 }

@@ -151,7 +151,7 @@ impl Searcher {
     pub fn alphabeta(
         &mut self,
         board: &Board,
-        depth: i16,
+        mut depth: i16,
         mut alpha: i16,
         mut beta: i16,
     ) -> SearchResult {
@@ -182,6 +182,11 @@ impl Searcher {
                 mv: None,
                 depth: 0,
             };
+        }
+
+        // So simple, yet so effective!
+        if board.in_check() {
+            depth += 1;
         }
 
         if depth < 0 {
