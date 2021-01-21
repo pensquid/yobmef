@@ -160,6 +160,13 @@ mod searcher {
         fen: "2q4k/1p4pp/7r/pP2B3/P3P1P1/1QP2pRn/5P1K/3R4 b - - 0 30",
         want: "h3f4",
     );
+
+    // test!(
+    //     name: free_knight_black_2,
+    //     fen: "r2q1rk1/p1pp1ppp/1p6/n2b4/1P3Q2/5N2/P3PPPP/R3KB1R w KQ - 0 14",
+    //     want: "b4a5",
+    // );
+
     test!(
         name: avoid_stalemate_winning,
         fen: "8/8/4Nk2/3KN3/3N4/8/8/8 w - - 4 3",
