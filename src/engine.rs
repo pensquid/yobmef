@@ -80,7 +80,7 @@ impl Engine {
             self.searcher.search_timed(&self.position, thinking_time)
         };
 
-        println!("bestmove {}", sr.mv.unwrap());
+        println!("bestmove {}", sr.mv);
     }
 
     fn handle(&mut self, msg: uci::EngineMessage) {

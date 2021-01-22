@@ -2,8 +2,7 @@ use crate::chess::{Board, Movement};
 use crate::{bitboard::BitBoard, chess::Color};
 use std::sync::Once;
 
-// FIXME: Move generic test helpers out of movegen.
-pub mod helpers;
+mod helpers;
 mod king;
 mod knight;
 mod magic;

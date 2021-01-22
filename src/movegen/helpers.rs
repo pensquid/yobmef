@@ -87,6 +87,10 @@ pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
     }
 }
 
+// assert that got_moves contains the same moves as moves string (space separated).
+// Note that the board is passed for better error messages. and ORDER DOES NOT MATTER!
+// TODO: Refactor to use a hashset or a double `contains()` to better show how order doesn't
+// matter.
 pub fn assert_moves(board: &Board, mut got_moves: Vec<Movement>, moves: &str) {
     let mut want_moves = vec_moves(moves);
     want_moves.sort_by_key(|m| m.hash());

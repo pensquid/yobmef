@@ -6,8 +6,8 @@ use std::time::{Duration, Instant};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SearchResult {
-    pub eval: i16,            // Evaluation for the position
-    pub mv: Option<Movement>, // The best move
+    pub eval: i16,    // Evaluation for the position
+    pub mv: Movement, // The best move
 
     // Depth of this evaluation, with respect to the root node.
     pub depth: i16,
@@ -20,9 +20,7 @@ pub struct Searcher {
     pub tp: HashMap<Board, SearchResult>,
 
     // Search statistics
-    pub nodes: u64, // excluding qs!
-    pub qs_nodes: u64,
-    pub pruned: u64,
+    pub nodes: u64, // including qs!
     pub cached: u64,
 
     // Used so I don't pass fucking everything as a parameter to alphabeta
@@ -40,7 +38,7 @@ pub fn sort_by_promise(board: &Board, moves: &mut Vec<Movement>) {
 }
 
 // TODO: Move this to movement?
-fn moves_to_str(moves: Vec<Movement>) -> String {
+fn moves_to_str(moves: &Vec<Movement>) -> String {
     moves
         .iter()
         .map(|mv| mv.to_notation())
@@ -52,20 +50,11 @@ impl Searcher {
     pub fn new() -> Self {
         Searcher {
             nodes: 0,
-            qs_nodes: 0,
-            pruned: 0,
             cached: 0,
             tp: HashMap::new(),
 
             start_depth: 0,
         }
-    }
-
-    fn reset_stats(&mut self) {
-        self.nodes = 0;
-        self.pruned = 0;
-        self.qs_nodes = 0;
-        self.cached = 0;
     }
 
     pub fn search_depth(&mut self, board: &Board, depth: i16) -> SearchResult {
@@ -74,12 +63,14 @@ impl Searcher {
 
     pub fn search_timed(&mut self, board: &Board, thinking_time: Duration) -> SearchResult {
         let start = Instant::now();
-        self.search(board, |_sr| start.elapsed() > thinking_time)
+        self.search(board, |_sr| {
+            return start.elapsed() > thinking_time;
+        })
     }
 
     pub fn search<F>(&mut self, board: &Board, quit: F) -> SearchResult
     where
-        F: Fn(SearchResult) -> bool,
+        F: Fn(&SearchResult) -> bool,
     {
         self.reset_stats();
 
@@ -89,33 +80,37 @@ impl Searcher {
         // NOTE: Tests rely on TP being available after search to verify PV.
         self.tp.clear();
 
-        let mut deepest = None;
-
-        // Bound ply because of possible recursion limit in endgames.
-        for depth in 1..1000 {
+        let mut depth = 1;
+        let start = Instant::now();
+        loop {
             self.start_depth = depth;
 
-            let ab_start = Instant::now();
-            let sr = self.alphabeta(board, depth, i16::MIN, i16::MAX);
-            let nps = (self.nodes as f64 / ab_start.elapsed().as_secs_f64()) as u64;
+            let score = self.alphabeta(board, depth, i16::MIN, i16::MAX);
+            let nps = (self.nodes as f64 / start.elapsed().as_secs_f64()) as u64;
             let pv = self.get_pv(board);
 
             println!(
-                "info depth {} score cp {} nodes {} nps {} pv {}",
+                "info depth {} score cp {} nodes {} nps {} time {} pv {}",
                 depth,
-                sr.eval,
+                score,
                 self.nodes,
                 nps,
-                moves_to_str(pv),
+                start.elapsed().as_millis(),
+                moves_to_str(&pv),
             );
-            deepest = Some(sr.clone());
 
-            if quit(sr) {
-                break;
+            let sr = SearchResult {
+                eval: score,
+                mv: pv.get(0).expect("pv empty, no legal moves?").clone(),
+                depth: depth,
+            };
+
+            // Bound ply because of possible recursion limit in endgames.
+            if quit(&sr) || depth >= 1000 {
+                return sr;
             }
+            depth += 1;
         }
-
-        deepest.unwrap() // safe because we always run alphabeta at least once.
     }
 
     // TODO: Perhaps keep pv state and update from alphabeta?
@@ -141,30 +136,34 @@ impl Searcher {
         moves
     }
 
-    // Get the next PV move
-    // NOTE: This assumes the TP will always hold the deepest search for a given board.
-    fn get_pv_next(&self, board: &Board) -> Option<&Movement> {
-        let sr = self.tp.get(board)?;
-        sr.mv.as_ref()
+    fn reset_stats(&mut self) {
+        self.nodes = 0;
+        self.cached = 0;
     }
 
+    // Get the next PV move
+    // NOTE: This assumes the TP will always hold the deepest search for a given board.
+    // TODO: Remove this function?
+    fn get_pv_next(&self, board: &Board) -> Option<&Movement> {
+        Some(&self.tp.get(board)?.mv)
+    }
+
+    // alphabeta search in a negamax framework.
+    // 'alpha' is always our best score,
+    // 'beta'
     pub fn alphabeta(
         &mut self,
         board: &Board,
         mut depth: i16,
         mut alpha: i16,
         mut beta: i16,
-    ) -> SearchResult {
-        if depth < 0 {
-            self.qs_nodes += 1;
-        } else {
-            self.nodes += 1;
-        }
+    ) -> i16 {
+        self.nodes += 1;
 
         if let Some(sr) = self.tp.get(board) {
             if sr.depth >= depth {
                 self.cached += 1;
-                return sr.clone();
+                return sr.eval;
             }
 
             // TODO: Use sr as guess for the best move,
@@ -184,12 +183,7 @@ impl Searcher {
                 0
             };
 
-            return SearchResult {
-                // The bigger depth to go, the better
-                eval: score,
-                mv: None,
-                depth: 0,
-            };
+            return score;
         }
 
         // So simple, yet so effective!
@@ -200,11 +194,6 @@ impl Searcher {
         if depth < 0 {
             // Quiet search!
             let score = eval::get_score(board, is_game_over);
-            let sr = SearchResult {
-                eval: score,
-                mv: None,
-                depth: 0,
-            };
 
             // It is our move, so if the static score is already better then
             // Our previous best score, we can just return the static eval.
@@ -213,12 +202,12 @@ impl Searcher {
             match board.side_to_move {
                 Color::White => {
                     if score >= alpha {
-                        return sr;
+                        return score;
                     }
                 }
                 Color::Black => {
                     if score <= beta {
-                        return sr;
+                        return score;
                     }
                 }
             }
@@ -227,21 +216,14 @@ impl Searcher {
 
             if moves.len() == 0 {
                 // End of QS, no captures remain
-                return SearchResult {
-                    eval: score,
-                    mv: None,
-                    depth: 0,
-                };
+                return score;
             }
         }
 
         sort_by_promise(board, &mut moves);
 
-        let mut sr = SearchResult {
-            eval: -i16::MAX * board.side_to_move.polarize(),
-            mv: None,
-            depth: i16::max(depth, 0), // avoid negative depth in QS
-        };
+        let mut score = -i16::MAX * board.side_to_move.polarize();
+        let mut best_move = moves[0].clone(); // moves len > 0 else gameover and return
 
         // This is ugly, normally I would use higher order functions
         // but this is easier to follow.
@@ -249,37 +231,43 @@ impl Searcher {
 
         if board.side_to_move == Color::White {
             for mv in moves {
-                let score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
-                if score.eval > sr.eval {
-                    sr.eval = score.eval;
-                    sr.mv = Some(mv);
+                let mv_score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
+                if mv_score > score {
+                    score = mv_score;
+                    best_move = mv;
                 }
 
-                alpha = i16::max(alpha, score.eval);
+                alpha = i16::max(alpha, score);
                 if beta <= alpha {
-                    self.pruned += 1;
                     break;
                 }
             }
         } else {
             for mv in moves {
-                let score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
-
-                if score.eval < sr.eval {
-                    sr.eval = score.eval;
-                    sr.mv = Some(mv);
+                let mv_score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
+                if mv_score < score {
+                    score = mv_score;
+                    best_move = mv;
                 }
 
-                beta = i16::min(beta, score.eval);
+                beta = i16::min(beta, score);
                 if beta <= alpha {
-                    self.pruned += 1;
                     break;
                 }
             }
         }
 
-        self.tp.insert(board.clone(), sr.clone());
-        sr
+        // Will always be deepest search of this position, since
+        // if there was a deeper search already, we would have returned it.
+        self.tp.insert(
+            board.clone(),
+            SearchResult {
+                eval: score,
+                depth: depth,
+                mv: best_move,
+            },
+        );
+        score
     }
 }
 
@@ -287,7 +275,6 @@ impl Searcher {
 mod tests {
     use super::*;
     use crate::movegen;
-    use crate::movegen::helpers::assert_moves;
 
     #[ignore]
     #[test]
@@ -319,11 +306,11 @@ mod tests {
         let sr_tp = s.tp.get(&board).unwrap().clone();
         assert_eq!(&sr, &sr_tp);
 
-        board.make_move_mut(&sr_tp.mv.unwrap());
+        board.make_move_mut(&sr_tp.mv);
         let sr_tp = s.tp.get(&board).unwrap().clone();
         assert_eq!(sr_tp.depth, depth - 1);
 
-        board.make_move_mut(&sr_tp.mv.unwrap());
+        board.make_move_mut(&sr_tp.mv);
         let sr_tp = s.tp.get(&board).unwrap().clone();
         assert_eq!(sr_tp.depth, depth - 2);
     }
@@ -339,28 +326,34 @@ mod tests {
         assert_eq!(&sr, sr_tp);
     }
 
-    #[test]
-    fn test_pv_legal_mate() {
-        movegen::gen_moves_once();
+    // The principled variation should always be legal.
+    // Including when there is a forced mate, and depth exceeds it.
 
-        // The principled variation should always be legal.
-        // Including when there is a forced mate, and depth exceeds it.
+    #[test]
+    fn test_pv_legal_mate_1_white() {
+        movegen::gen_moves_once();
 
         let board =
             Board::from_fen("r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4")
                 .unwrap();
+        eprintln!("board:\n{}", board);
 
         let mut s = Searcher::new();
         s.search_depth(&board, 4);
         let pv = s.get_pv(&board);
+        assert_eq!(moves_to_str(&pv), "h5f7");
+    }
 
-        assert_moves(&board, pv, "h5f7");
+    #[test]
+    fn test_pv_legal_mate_3_black() {
+        movegen::gen_moves_once();
 
         let board = Board::from_fen("8/p4p1k/3p1P2/1p1br3/3p4/1Pr5/P6K/8 b - - 0 1").unwrap();
-        // Reusing searcher is fine, it's what the engine would do
-        // depth 5 so after mate it has a chance to fuckup with an illegal move.
+        eprintln!("board:\n{}", board);
+
+        let mut s = Searcher::new();
         s.search_depth(&board, 5);
         let pv = s.get_pv(&board);
-        assert_moves(&board, pv, "e5e2 h2g1 c3c1");
+        assert_eq!(moves_to_str(&pv), "e5e2 h2g1 c3c1");
     }
 }
