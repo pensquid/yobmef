@@ -18,6 +18,7 @@ pub struct Searcher {
     // Transposition table
     // TODO: Store PV and use as move guesses for a/b search
     pub tp: HashMap<Board, SearchResult>,
+    pub tp_max_len: usize,
 
     // Search statistics
     pub nodes: u64, // including qs!
@@ -48,13 +49,23 @@ fn moves_to_str(moves: &Vec<Movement>) -> String {
 
 impl Searcher {
     pub fn new() -> Self {
-        Searcher {
+        let mut s = Searcher {
             nodes: 0,
             cached: 0,
             tp: HashMap::new(),
-
+            tp_max_len: 0,
             start_depth: 0,
-        }
+        };
+
+        // default to a 64mb hashtable (small)
+        s.set_hash_size(64);
+
+        return s;
+    }
+
+    pub fn set_hash_size(&mut self, mb: usize) {
+        use std::mem;
+        self.tp_max_len = (1024 * 1024 * mb) / mem::size_of::<Board>();
     }
 
     pub fn search_depth(&mut self, board: &Board, depth: i16) -> SearchResult {
@@ -75,10 +86,14 @@ impl Searcher {
         self.reset_stats();
 
         // so we don't use infinite memory
-        // TODO: Maintain TP between searches, via replacement strategies.
+        // TODO: Better replacement strategies
         // https://www.chessprogramming.org/Transposition_Table#Replacement_Strategies
         // NOTE: Tests rely on TP being available after search to verify PV.
-        self.tp.clear();
+        // FIXME: max size can be exeeded during iterative deepening or alphabeta!
+        if self.tp.len() > self.tp_max_len {
+            eprintln!("hash clear, len {} max {}", self.tp.len(), self.tp_max_len);
+            self.tp.clear();
+        }
 
         let mut depth = 1;
         let start = Instant::now();
