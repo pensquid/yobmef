@@ -81,20 +81,21 @@ impl Searcher {
         self.tp.clear();
 
         let mut depth = 1;
+        let start = Instant::now();
         loop {
             self.start_depth = depth;
 
-            let ab_start = Instant::now();
             let score = self.alphabeta(board, depth, i16::MIN, i16::MAX);
-            let nps = (self.nodes as f64 / ab_start.elapsed().as_secs_f64()) as u64;
+            let nps = (self.nodes as f64 / start.elapsed().as_secs_f64()) as u64;
             let pv = self.get_pv(board);
 
             println!(
-                "info depth {} score cp {} nodes {} nps {} pv {}",
+                "info depth {} score cp {} nodes {} nps {} time {} pv {}",
                 depth,
                 score,
                 self.nodes,
                 nps,
+                start.elapsed().as_millis(),
                 moves_to_str(&pv),
             );
 
