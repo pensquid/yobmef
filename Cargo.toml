@@ -9,6 +9,7 @@ default-run = "yobmef"
 
 [dependencies]
 rand = "^0.8.2"
+replace_with = "0.1.7"
 
 [profile.test]
 opt-level = 3

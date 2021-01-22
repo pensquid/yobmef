@@ -2,6 +2,11 @@ use crate::chess::{Board, Color, Movement};
 use crate::eval;
 use crate::movegen::MoveGen;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use std::sync::Arc;
+use std::thread;
+use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -11,6 +16,27 @@ pub struct SearchResult {
 
     // Depth of this evaluation, with respect to the root node.
     pub depth: i16,
+}
+
+// A handle on a running search.
+pub struct SearcherHandle {
+    // stop the search?
+    stop: Arc<AtomicBool>,
+
+    jh: JoinHandle<(Searcher, SearchResult)>,
+}
+
+impl SearcherHandle {
+    // Stop the thread, then wait for it to exit.
+    pub fn stop_join(self) -> (Searcher, SearchResult) {
+        self.stop();
+        // only fails if searcher thread panics, which it shoulden't
+        self.jh.join().unwrap()
+    }
+
+    pub fn stop(&self) {
+        self.stop.store(true, Ordering::Relaxed);
+    }
 }
 
 #[derive(Debug)]
@@ -68,6 +94,19 @@ impl Searcher {
         self.tp_max_len = (1024 * 1024 * mb) / mem::size_of::<Board>();
     }
 
+    pub fn start_search(mut self, board: Board) -> SearcherHandle {
+        // FIXME: Ugly and redundant.
+        let stop_th = Arc::new(AtomicBool::new(false));
+        let stop = stop_th.clone();
+
+        let jh = thread::spawn(move || {
+            let sr = self.search(&board, |_| stop_th.load(Ordering::Relaxed));
+            return (self, sr);
+        });
+
+        SearcherHandle { jh, stop }
+    }
+
     pub fn search_depth(&mut self, board: &Board, depth: i16) -> SearchResult {
         self.search(board, |sr| sr.depth >= depth)
     }
@@ -122,6 +161,7 @@ impl Searcher {
 
             // Bound ply because of possible recursion limit in endgames.
             if quit(&sr) || depth >= 1000 {
+                println!("bestmove {}", sr.mv);
                 return sr;
             }
             depth += 1;

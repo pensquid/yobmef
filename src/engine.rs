@@ -1,21 +1,30 @@
 use crate::chess::{Board, Color};
 use crate::movegen::{perft, MoveGen};
-use crate::search::Searcher;
+use crate::search::{Searcher, SearcherHandle};
 use crate::uci;
 use crate::uci::EngineMessage;
+use replace_with::replace_with_or_abort;
 use std::io;
 use std::time::Duration;
 
+// FIXME: Clean this up
+// (I don't want to use Result becuase this is nott an error!)
+enum SearchStatus {
+    Idle(Searcher),
+    InProgress(SearcherHandle),
+}
+use SearchStatus::*;
+
 pub struct Engine {
     position: Board,
-    searcher: Searcher,
+    search: SearchStatus,
 }
 
 impl Engine {
     pub fn new() -> Engine {
         Engine {
             position: Board::from_start_pos(),
-            searcher: Searcher::new(),
+            search: SearchStatus::Idle(Searcher::new()),
         }
     }
 
@@ -73,14 +82,20 @@ impl Engine {
             return;
         }
 
-        let sr = if let Some(depth) = opts.depth {
-            self.searcher.search_depth(&self.position, depth)
-        } else {
-            let thinking_time = self.thinking_time(opts);
-            self.searcher.search_timed(&self.position, thinking_time)
-        };
+        let thinking_time = self.thinking_time(opts);
+        let board = self.position.clone();
 
-        println!("bestmove {}", sr.mv);
+        replace_with_or_abort(&mut self.search, |s| match s {
+            Idle(searcher) => {
+                let handle = searcher.start_search(board);
+                InProgress(handle)
+            }
+
+            InProgress(handle) => {
+                eprintln!("ERROR: search already in progress (send 'stop')");
+                InProgress(handle)
+            }
+        });
     }
 
     fn handle(&mut self, msg: uci::EngineMessage) {
@@ -103,6 +118,20 @@ impl Engine {
             }
 
             EngineMessage::Go(opts) => self.go(opts),
+
+            EngineMessage::Stop => {
+                replace_with_or_abort(&mut self.search, |s| match s {
+                    InProgress(handle) => {
+                        let (searcher, _sr) = handle.stop_join();
+                        Idle(searcher)
+                    }
+
+                    Idle(searcher) => {
+                        eprintln!("ERROR: search not running");
+                        Idle(searcher)
+                    }
+                });
+            }
 
             _ => {}
         }
