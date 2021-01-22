@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use super::{gen_moves_once, MoveGen};
+use super::MoveGen;
 use crate::bitboard::BitBoard;
 use crate::chess::{Board, Movement, Square};
 
@@ -44,7 +44,6 @@ pub fn moves_to_str(moves: &Vec<Movement>) -> String {
 }
 
 pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
-    gen_moves_once();
     let moves: Vec<Movement> = MoveGen::new_legal(&board).collect();
 
     let legal_str = moves_to_str(&moves);
@@ -67,7 +66,6 @@ pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
 }
 
 pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
-    gen_moves_once();
     let squares: Vec<Square> = board.collect();
 
     for coord in included.split(' ') {

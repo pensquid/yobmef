@@ -181,13 +181,10 @@ pub fn get_score(board: &Board, game_over: bool) -> i16 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::movegen::gen_moves_once;
     use crate::{chess::Movement, movegen::MoveGen};
 
     #[test]
     fn test_get_score_e2e4() {
-        gen_moves_once();
-
         let mut b = Board::from_start_pos();
         b.make_move_mut(&Movement::from_notation("e2e4").expect("e2e4 move is valid"));
 
@@ -198,8 +195,6 @@ mod tests {
 
     #[test]
     fn test_get_score_mate_for_black() {
-        gen_moves_once();
-
         let b =
             Board::from_fen("r1b1kb1r/pppp1pp1/2n5/1B2p3/4PP2/6p1/PPPP2Pq/RNBQNRK1 w kq f3 0 8")
                 .unwrap();
@@ -212,8 +207,6 @@ mod tests {
 
     #[test]
     fn test_get_score_mate_for_white() {
-        gen_moves_once();
-
         let b = Board::from_fen("k1R5/8/1K6/8/8/8/8/8 b - - 0 1").unwrap();
         let score = get_score(&b, MoveGen::new_legal(&b).count() == 0);
 
@@ -224,8 +217,6 @@ mod tests {
 
     #[test]
     fn test_get_score_castle() {
-        gen_moves_once();
-
         let mut b =
             Board::from_fen("rnbqkb1r/ppp2ppp/3p1n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4")
                 .unwrap();

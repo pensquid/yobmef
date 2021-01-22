@@ -13,7 +13,6 @@ macro_rules! test {
         #[test]
         fn $name() {
             gen_moves_once();
-
             let board = Board::from_fen($fen).expect("fen should be valid");
             let mut searcher = Searcher::new();
             let search_result = searcher.search_depth(&board, 5);
@@ -28,7 +27,6 @@ macro_rules! test {
         #[test]
         fn $name() {
             gen_moves_once();
-
             let board = Board::from_fen($fen).expect("fen should be valid");
             let mut searcher = Searcher::new();
             let search_result = searcher.search_depth(&board, 5);

@@ -289,13 +289,10 @@ impl Searcher {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::movegen;
 
     #[ignore]
     #[test]
     fn test_sort_by_promise_mate() {
-        movegen::gen_moves_once();
-
         let board =
             Board::from_fen("rn1qkbnr/ppp2ppp/3p4/4p2Q/2B1P1b1/8/PPPP1PPP/RNB1K1NR w KQkq - 2 4")
                 .unwrap();
@@ -308,7 +305,6 @@ mod tests {
 
     #[test]
     fn test_pv_deepest_startpos() {
-        movegen::gen_moves_once();
         let depth = 4;
 
         // TODO: Cleanup this ugly test.
@@ -332,8 +328,6 @@ mod tests {
 
     #[test]
     fn test_pv_deepest_mate2() {
-        movegen::gen_moves_once();
-
         let mut s = Searcher::new();
         let board = Board::from_fen("8/p4p1k/3p1P2/1p1br3/3p4/1Pr5/P6K/8 b - - 0 1").unwrap();
         let sr = s.search_depth(&board, 5);
@@ -346,8 +340,6 @@ mod tests {
 
     #[test]
     fn test_pv_legal_mate_1_white() {
-        movegen::gen_moves_once();
-
         let board =
             Board::from_fen("r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4")
                 .unwrap();
@@ -361,8 +353,6 @@ mod tests {
 
     #[test]
     fn test_pv_legal_mate_3_black() {
-        movegen::gen_moves_once();
-
         let board = Board::from_fen("8/p4p1k/3p1P2/1p1br3/3p4/1Pr5/P6K/8 b - - 0 1").unwrap();
         eprintln!("board:\n{}", board);
 

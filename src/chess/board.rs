@@ -179,6 +179,11 @@ impl Board {
     }
 
     pub fn from_fen(s: &str) -> Option<Board> {
+        // In release mode, checking a sync.Once all the time is cringe
+        if cfg!(test) {
+            movegen::gen_moves_once();
+        }
+
         let mut board = Board::empty();
 
         let mut fen_split = s.split(' ');
@@ -422,7 +427,6 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use movegen::gen_moves_once;
 
     fn sq(s: &str) -> Square {
         Square::from_notation(s).unwrap()
@@ -430,8 +434,6 @@ mod tests {
 
     #[test]
     fn test_get_king_square() {
-        gen_moves_once();
-
         let board = Board::from_fen("8/5k2/8/2K5/8/8/8/8 w - - 0 1").unwrap();
         let white_king = Square::from_notation("c5").unwrap();
         let black_king = Square::from_notation("f7").unwrap();
@@ -441,7 +443,6 @@ mod tests {
 
     #[test]
     fn test_color_on() {
-        gen_moves_once();
         let b = Board::from_start_pos();
         assert_eq!(b.color_on(sq("e2")), Some(Color::White));
         assert_eq!(b.color_on(sq("e7")), Some(Color::Black));
@@ -451,7 +452,6 @@ mod tests {
 
     #[test]
     fn test_piece_on() {
-        gen_moves_once();
         let b = Board::from_start_pos();
         assert_eq!(b.piece_on(sq("e2")), Some(Piece::Pawn));
         assert_eq!(b.piece_on(sq("e7")), Some(Piece::Pawn));
@@ -463,7 +463,6 @@ mod tests {
 
     #[test]
     fn test_from_fen_starting() {
-        gen_moves_once();
         let b = Board::from_start_pos();
 
         assert!(b.en_passant.is_none());
@@ -477,7 +476,6 @@ mod tests {
 
     #[test]
     fn test_from_fen_castling() {
-        gen_moves_once();
         let b = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Kq - 0 1")
             .expect("castling fen is valid");
 
@@ -488,7 +486,6 @@ mod tests {
 
     #[test]
     fn test_from_fen_e2e4() {
-        gen_moves_once();
         let b = Board::from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")
             .expect("e2e4 fen is valid");
         eprintln!("board:\n{}", b);
@@ -503,7 +500,6 @@ mod tests {
 
     #[test]
     fn test_fen_endgame() {
-        gen_moves_once();
         let b = Board::from_fen("8/3k1p2/1R1p2P1/8/2P1N3/2Q1K3/8/8 w - - 0 1").unwrap();
 
         assert_eq!(b.en_passant, None);
@@ -521,7 +517,6 @@ mod tests {
 
     #[test]
     fn test_make_move_e2e4() {
-        gen_moves_once();
         let mut b = Board::from_start_pos();
 
         assert!(b.en_passant.is_none());
@@ -541,8 +536,6 @@ mod tests {
 
     #[test]
     fn test_make_move_promote() {
-        gen_moves_once();
-
         // Very common and realistic board position 11/10
         let mut b = Board::from_fen("1nbqkbnr/rP1ppppp/p1p5/8/8/8/1PPPPPPP/RNBQKBNR w KQk - 1 5")
             .expect("before promotion fen is valid");
@@ -560,7 +553,6 @@ mod tests {
 
     #[test]
     fn test_make_move_capture() {
-        gen_moves_once();
         let mut b = Board::from_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2")
             .unwrap();
         eprintln!("{}", b);
@@ -575,7 +567,6 @@ mod tests {
 
     #[test]
     fn test_valid_after_capture() {
-        gen_moves_once();
         let mut b =
             Board::from_fen("rnbqkbnr/ppp2ppp/8/3P4/8/2Np4/PP2PPPP/R1BQKBNR w KQkq - 0 1").unwrap();
 
@@ -587,15 +578,12 @@ mod tests {
 
     #[test]
     fn test_is_in_check() {
-        gen_moves_once();
-
         let board = Board::from_fen("k1R5/8/1K6/8/8/8/8/8 b - - 0 1").unwrap();
         assert!(board.in_check(), "black should be in check");
     }
 
     #[test]
     fn test_make_move_castle() {
-        gen_moves_once();
         let mut board =
             Board::from_fen("rnbqk1nr/ppp2ppp/3b4/3p4/8/3B1N2/PPPP1PPP/RNBQK2R w KQkq - 2 5")
                 .unwrap();
@@ -618,7 +606,6 @@ mod tests {
 
     #[test]
     fn test_make_move_remove_castling() {
-        gen_moves_once();
         let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1").unwrap();
 
         board.make_move_mut(&Movement::from_notation("a1a2").unwrap());
@@ -640,7 +627,6 @@ mod tests {
 
     #[test]
     fn test_make_move_bishop_en_passant() {
-        gen_moves_once();
         let mut board = Board::from_start_pos();
 
         board.make_move_mut(&Movement::from_notation("e2e4").unwrap());
@@ -656,7 +642,6 @@ mod tests {
 
     #[test]
     fn test_make_move_en_passant_cleared() {
-        gen_moves_once();
         // en-passant should be cleared every move.
         let mut board = Board::from_start_pos();
         board.make_move_mut(&Movement::from_notation("e2e4").unwrap());
@@ -670,16 +655,12 @@ mod tests {
 
     #[test]
     fn test_to_fen_startpos() {
-        gen_moves_once();
-
         let board = Board::from_start_pos();
         assert_eq!(board.to_fen(), STARTING_FEN);
     }
 
     #[test]
     fn test_to_fen_e2e4() {
-        gen_moves_once();
-
         let mut board = Board::from_start_pos();
         board.make_move_mut(&Movement::from_notation("e2e4").unwrap());
         assert_eq!(
