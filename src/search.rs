@@ -52,6 +52,12 @@ pub struct Searcher {
 
     // Used so I don't pass fucking everything as a parameter to alphabeta
     pub start_depth: i16, // start depth of this ID iteration
+
+    // Should we stop the search?
+    stop: Arc<AtomicBool>,
+
+    // Was the last search invalid, and should we ignore results?
+    invalid: bool,
 }
 
 // Sorting is very important for alpha beta search pruning
@@ -81,6 +87,7 @@ impl Searcher {
             tp: HashMap::new(),
             tp_max_len: 0,
             start_depth: 0,
+            stop: Arc::new(AtomicBool::new(false)),
         };
 
         // default to a 64mb hashtable (small)
@@ -95,9 +102,11 @@ impl Searcher {
     }
 
     pub fn start_search(mut self, board: Board) -> SearcherHandle {
-        // FIXME: Ugly and redundant.
+        // FIXME: this is so ugly, sad and bad
+
         let stop_th = Arc::new(AtomicBool::new(false));
         let stop = stop_th.clone();
+        self.stop = stop_th.clone();
 
         let jh = thread::spawn(move || {
             let sr = self.search(&board, |_| stop_th.load(Ordering::Relaxed));
@@ -105,6 +114,20 @@ impl Searcher {
         });
 
         SearcherHandle { jh, stop }
+    }
+
+    pub fn start_search_timed(self, board: Board, thinking_time: Duration) -> SearcherHandle {
+        let handle = self.start_search(board);
+        let stop_bool = handle.stop.clone();
+
+        // AAAAAAAAAAA
+        thread::spawn(move || {
+            thread::sleep(thinking_time);
+            eprintln!("STOP");
+            stop_bool.store(true, Ordering::Relaxed);
+        });
+
+        handle
     }
 
     pub fn search_depth(&mut self, board: &Board, depth: i16) -> SearchResult {
@@ -140,6 +163,16 @@ impl Searcher {
             self.start_depth = depth;
 
             let score = self.alphabeta(board, depth, i16::MIN, i16::MAX);
+            // AAAAAAAAAAAAAAAAAAAAAAA
+            if self.invalid {
+                let mv = pv.get(0).expect("pv empty");
+                eprintln!("bestmove {}", mv);
+                return SearchResult {
+                    eval: mv: mv,
+                    depth: depth - 1,
+                };
+            }
+
             let nps = (self.nodes as f64 / start.elapsed().as_secs_f64()) as u64;
             let pv = self.get_pv(board);
 
@@ -213,6 +246,11 @@ impl Searcher {
         mut alpha: i16,
         mut beta: i16,
     ) -> i16 {
+        if self.stop.load(Ordering::Relaxed) {
+            self.invalid = true;
+            return 0;
+        }
+
         self.nodes += 1;
 
         if let Some(sr) = self.tp.get(board) {
@@ -312,16 +350,20 @@ impl Searcher {
             }
         }
 
-        // Will always be deepest search of this position, since
-        // if there was a deeper search already, we would have returned it.
-        self.tp.insert(
-            board.clone(),
-            SearchResult {
-                eval: score,
-                depth: depth,
-                mv: best_move,
-            },
-        );
+        // Required here and above in order to avoid the case where
+        // children abort, but we use their dummy results to update TP
+        if !self.stop.load(Ordering::Relaxed) {
+            // Will always be deepest search of this position, since
+            // if there was a deeper search already, we would have returned it.
+            self.tp.insert(
+                board.clone(),
+                SearchResult {
+                    eval: score,
+                    depth: depth,
+                    mv: best_move,
+                },
+            );
+        }
         score
     }
 }

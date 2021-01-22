@@ -85,15 +85,17 @@ impl Engine {
         let thinking_time = self.thinking_time(opts);
         let board = self.position.clone();
 
+        // TODO: Remove duplication
         replace_with_or_abort(&mut self.search, |s| match s {
             Idle(searcher) => {
-                let handle = searcher.start_search(board);
+                let handle = searcher.start_search_timed(board, thinking_time);
                 InProgress(handle)
             }
 
             InProgress(handle) => {
-                eprintln!("ERROR: search already in progress (send 'stop')");
-                InProgress(handle)
+                let (searcher, _) = handle.stop_join();
+                let new_handle = searcher.start_search_timed(board, thinking_time);
+                InProgress(new_handle)
             }
         });
     }
