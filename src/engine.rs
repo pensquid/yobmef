@@ -60,8 +60,9 @@ impl Engine {
         let our_time = our_time.unwrap_or(600_000);
         let our_increment = our_increment.unwrap_or(0);
 
-        // 80 is just a conservative estimate on the avg game length.
-        let time_for_this_move = our_time / 80;
+        // Divide our remaining time by 30 to get the time for this move
+        // (totally arbitrary, fight me :D)
+        let time_for_this_move = our_time / 30;
 
         Duration::from_millis(time_for_this_move + our_increment)
     }
