@@ -4,6 +4,23 @@ use crate::movegen::MoveGen;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
+#[derive(Debug)]
+pub struct Limits {
+    depth: Option<i16>,
+    // Maybe could be replaced with wtime, etc.
+    thinking_time: Option<Duration>,
+    // TODO: Add other limits, like searchmoves, mate, etc.
+}
+
+impl Limits {
+    pub fn none() -> Self {
+        Self {
+            depth: None,
+            thinking_time: None,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SearchResult {
     pub eval: i16,    // Evaluation for the position
@@ -25,7 +42,11 @@ pub struct Searcher {
     pub cached: u64,
 
     // Used so I don't pass fucking everything as a parameter to alphabeta
-    pub start_depth: i16, // start depth of this ID iteration
+    start_depth: i16, // start depth of this ID iteration
+
+    // Used in should_stop
+    limits: Limits,
+    start: Instant,
 }
 
 // Sorting is very important for alpha beta search pruning
@@ -55,6 +76,8 @@ impl Searcher {
             tp: HashMap::new(),
             tp_max_len: 0,
             start_depth: 0,
+            limits: Limits::none(),
+            start: Instant::now(), // never used, reset in search() before a/b
         };
 
         // default to a 64mb hashtable (small)
@@ -69,20 +92,19 @@ impl Searcher {
     }
 
     pub fn search_depth(&mut self, board: &Board, depth: i16) -> SearchResult {
-        self.search(board, |sr| sr.depth >= depth)
+        let mut limits = Limits::none();
+        limits.depth = Some(depth);
+
+        self.search(board, limits)
     }
 
     pub fn search_timed(&mut self, board: &Board, thinking_time: Duration) -> SearchResult {
-        let start = Instant::now();
-        self.search(board, |_sr| {
-            return start.elapsed() > thinking_time;
-        })
+        let mut limits = Limits::none();
+        limits.thinking_time = Some(thinking_time);
+        self.search(board, limits)
     }
 
-    pub fn search<F>(&mut self, board: &Board, quit: F) -> SearchResult
-    where
-        F: Fn(&SearchResult) -> bool,
-    {
+    pub fn search(&mut self, board: &Board, limits: Limits) -> SearchResult {
         self.reset_stats();
 
         // so we don't use infinite memory
@@ -95,22 +117,32 @@ impl Searcher {
             self.tp.clear();
         }
 
+        // TODO: Move start to uci code, we want to get start as soon as possible,
+        // so we don't lose on time in scary 1s lightning games.
+        // For now, we just subtract a little time to get some buffer.
+        self.start = Instant::now() - Duration::from_millis(1);
+        self.limits = limits;
+
         let mut depth = 1;
-        let start = Instant::now();
+
         loop {
             self.start_depth = depth;
 
             let score = self.alphabeta(board, depth, i16::MIN, i16::MAX);
-            let nps = (self.nodes as f64 / start.elapsed().as_secs_f64()) as u64;
+            let nps = (self.nodes as f64 / self.start.elapsed().as_secs_f64()) as u64;
             let pv = self.get_pv(board);
 
+            // NOTE: Maybe we shoulden't print this if alphabeta prematurely exited?
+            // I think its fine though, since we don't update PV on premature exit.
+            // This might signify a depth greater then what we actually searched
+            // though.
             println!(
                 "info depth {} score cp {} nodes {} nps {} time {} pv {}",
                 depth,
                 score,
                 self.nodes,
                 nps,
-                start.elapsed().as_millis(),
+                self.start.elapsed().as_millis(),
                 moves_to_str(&pv),
             );
 
@@ -121,10 +153,19 @@ impl Searcher {
             };
 
             // Bound ply because of possible recursion limit in endgames.
-            if quit(&sr) || depth >= 1000 {
+            if self.should_stop() || depth >= self.limits.depth.unwrap_or(1000) {
                 return sr;
             }
             depth += 1;
+        }
+    }
+
+    // Should a A/B search stop? uses self.limits
+    pub fn should_stop(&self) -> bool {
+        if let Some(thinking_time) = self.limits.thinking_time {
+            self.start.elapsed() > thinking_time
+        } else {
+            false
         }
     }
 
@@ -173,6 +214,10 @@ impl Searcher {
         mut alpha: i16,
         mut beta: i16,
     ) -> i16 {
+        if self.should_stop() {
+            return 0;
+        }
+
         self.nodes += 1;
 
         if let Some(sr) = self.tp.get(board) {
@@ -272,16 +317,19 @@ impl Searcher {
             }
         }
 
-        // Will always be deepest search of this position, since
-        // if there was a deeper search already, we would have returned it.
-        self.tp.insert(
-            board.clone(),
-            SearchResult {
-                eval: score,
-                depth: depth,
-                mv: best_move,
-            },
-        );
+        // Storing in TP after stop is too dangerous
+        if !self.should_stop() {
+            // Will always be deepest search of this position, since
+            // if there was a deeper search already, we would have returned it.
+            self.tp.insert(
+                board.clone(),
+                SearchResult {
+                    eval: score,
+                    depth: depth,
+                    mv: best_move,
+                },
+            );
+        }
         score
     }
 }
@@ -361,4 +409,31 @@ mod tests {
         let pv = s.get_pv(&board);
         assert_eq!(moves_to_str(&pv), "e5e2 h2g1 c3c1");
     }
+
+    macro_rules! test_think_time {
+        ($name:ident, $think_time:expr) => {
+            #[test]
+            fn $name() {
+                let board = Board::from_start_pos();
+
+                let mut s = Searcher::new();
+                let start = Instant::now();
+                let think_time = Duration::from_millis($think_time);
+                s.search_timed(&board, think_time);
+                let elapsed = start.elapsed();
+                if elapsed > think_time {
+                    panic!(
+                        "search elapsed {}micro > want {}micro",
+                        elapsed.as_micros(),
+                        think_time.as_micros()
+                    );
+                }
+            }
+        };
+    }
+
+    test_think_time!(test_think_time_1ms, 1);
+    test_think_time!(test_think_time_10ms, 10);
+    test_think_time!(test_think_time_100ms, 100);
+    test_think_time!(test_think_time_1000ms, 1000);
 }
