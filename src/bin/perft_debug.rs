@@ -73,8 +73,8 @@ fn yobmef_perft(board: &Board, depth: u16) -> PerftResults {
 }
 
 // TODO: Use uci parser instead of inlining this duplication
-fn board_from_moves(moves: &str) -> Board {
-    let mut board = Board::from_start_pos();
+fn board_from_moves(start: Board, moves: &str) -> Board {
+    let mut board = start;
     if moves == "" {
         return board;
     }
@@ -106,13 +106,13 @@ fn join_moves(res: &PerftResults) -> String {
 
 // TODO: Change moves to a Vec<Movement> and convert back to string
 // in engine_perft
-fn perft_drill(mut moves: String, depth: u16) {
+fn perft_drill(start: Board, mut moves: String, depth: u16) {
     eprintln!("\nmoves: '{}'", moves.trim());
     eprintln!("stockfish perft({})", depth);
     let mut sf = engine_perft("stockfish", &moves, depth).expect("stockfish failed to start");
     sort(&mut sf);
 
-    let board = board_from_moves(&moves);
+    let board = board_from_moves(start, &moves);
     eprintln!("yobmef perft({})", depth);
     let mut ym = yobmef_perft(&board, depth);
     sort(&mut ym);
@@ -138,7 +138,7 @@ fn perft_drill(mut moves: String, depth: u16) {
             moves.push_str(" ");
             moves.push_str(&mv_str);
 
-            perft_drill(moves, depth - 1);
+            perft_drill(board, moves, depth - 1);
 
             // TODO: Ask "would you like to continue searching for diffs?"
             // and continue if they say yes.
@@ -150,5 +150,14 @@ fn perft_drill(mut moves: String, depth: u16) {
 fn main() {
     gen_moves_once();
 
-    perft_drill("".to_owned(), 6);
+    eprintln!("testing startpos");
+    perft_drill(Board::from_start_pos(), "".to_owned(), 6);
+
+    eprintln!("\ntesting the KiwiPete position");
+    perft_drill(
+        Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
+            .unwrap(),
+        "".to_owned(),
+        5, // only 5 bc its so deeeep
+    );
 }
