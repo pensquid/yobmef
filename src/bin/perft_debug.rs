@@ -14,7 +14,7 @@ struct PerftResult {
 
 type PerftResults = Vec<PerftResult>;
 
-fn engine_perft(path: &str, moves: &str, depth: u16) -> Result<PerftResults, Box<dyn Error>> {
+fn engine_perft(path: &str, board: &Board, depth: u16) -> Result<PerftResults, Box<dyn Error>> {
     let mut proc = Command::new(path)
         .stderr(Stdio::inherit())
         .stdout(Stdio::piped())
@@ -25,10 +25,7 @@ fn engine_perft(path: &str, moves: &str, depth: u16) -> Result<PerftResults, Box
     let mut stdin = proc.stdin.take().unwrap();
     let stdout = BufReader::new(proc.stdout.take().unwrap());
 
-    // NOTE: This is relying on the engine defaulting to startpos
-    if moves != "" {
-        writeln!(stdin, "position startpos moves {}", moves)?;
-    }
+    writeln!(stdin, "position startpos fen {}", board.to_fen())?;
     writeln!(stdin, "go perft {}", depth)?;
 
     let mut res = Vec::new();
@@ -72,23 +69,6 @@ fn yobmef_perft(board: &Board, depth: u16) -> PerftResults {
     res
 }
 
-// TODO: Use uci parser instead of inlining this duplication
-fn board_from_moves(start: Board, moves: &str) -> Board {
-    let mut board = start;
-    if moves == "" {
-        return board;
-    }
-
-    for mv in moves
-        .trim()
-        .split(' ')
-        .map(|mv| Movement::from_notation(mv).unwrap())
-    {
-        board.make_move_mut(&mv);
-    }
-    board
-}
-
 // not using get_sorted_moves from engine, because many evals in the opening
 // can be equal, so we might not get the same ordering.
 fn sort(res: &mut PerftResults) {
@@ -106,13 +86,11 @@ fn join_moves(res: &PerftResults) -> String {
 
 // TODO: Change moves to a Vec<Movement> and convert back to string
 // in engine_perft
-fn perft_drill(start: Board, mut moves: String, depth: u16) {
-    eprintln!("\nmoves: '{}'", moves.trim());
+fn perft_drill(board: Board, depth: u16) {
     eprintln!("stockfish perft({})", depth);
-    let mut sf = engine_perft("stockfish", &moves, depth).expect("stockfish failed to start");
+    let mut sf = engine_perft("stockfish", &board, depth).expect("stockfish failed to start");
     sort(&mut sf);
 
-    let board = board_from_moves(start, &moves);
     eprintln!("yobmef perft({})", depth);
     let mut ym = yobmef_perft(&board, depth);
     sort(&mut ym);
@@ -133,12 +111,7 @@ fn perft_drill(start: Board, mut moves: String, depth: u16) {
         if r_sf.nodes != r_ym.nodes {
             eprintln!("DIFF {} sf {} yobmef {}", r_sf.mv, r_sf.nodes, r_ym.nodes);
 
-            let mv_str = r_sf.mv.to_notation();
-            // cursed but ok as long as board_from_moves calls trim()
-            moves.push_str(" ");
-            moves.push_str(&mv_str);
-
-            perft_drill(board, moves, depth - 1);
+            perft_drill(board.make_move(&r_sf.mv), depth - 1);
 
             // TODO: Ask "would you like to continue searching for diffs?"
             // and continue if they say yes.
@@ -151,13 +124,12 @@ fn main() {
     gen_moves_once();
 
     eprintln!("testing startpos");
-    perft_drill(Board::from_start_pos(), "".to_owned(), 6);
+    perft_drill(Board::from_start_pos(), 5);
 
     eprintln!("\ntesting the KiwiPete position");
     perft_drill(
         Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
             .unwrap(),
-        "".to_owned(),
         5, // only 5 bc its so deeeep
     );
 }
