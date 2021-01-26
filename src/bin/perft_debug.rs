@@ -25,7 +25,7 @@ fn engine_perft(path: &str, board: &Board, depth: u16) -> Result<PerftResults, B
     let mut stdin = proc.stdin.take().unwrap();
     let stdout = BufReader::new(proc.stdout.take().unwrap());
 
-    writeln!(stdin, "position startpos fen {}", board.to_fen())?;
+    writeln!(stdin, "position fen {}", board.to_fen())?;
     writeln!(stdin, "go perft {}", depth)?;
 
     let mut res = Vec::new();
