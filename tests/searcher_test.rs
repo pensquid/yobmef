@@ -18,6 +18,7 @@ macro_rules! test {
             let search_result = searcher.search_depth(&board, 5);
             let got = search_result.mv;
             let want = Movement::from_notation($want).unwrap();
+            eprintln!("{}", board);
             eprintln!("bestmove {} eval {}", got, search_result.eval);
             assert_eq!(want, got, "want {} got {}", want, got);
         }
@@ -32,6 +33,7 @@ macro_rules! test {
             let search_result = searcher.search_depth(&board, 5);
             let got = search_result.mv;
             let not = Movement::from_notation($not).unwrap();
+            eprintln!("{}", board);
             eprintln!("bestmove {} eval {}", got, search_result.eval);
             assert_ne!(not, got, "got {} want something else", got);
         }
