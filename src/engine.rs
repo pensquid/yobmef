@@ -144,7 +144,7 @@ mod tests {
         // black_time: 300_000,
         let t = engine.thinking_time(opts).as_millis();
 
-        // Assume you will think between 1s and 10s per move in a 5 minute game
-        assert!(1_000 < t && t < 10_000, "1s < t({}s) < 10s", t / 1000);
+        // Assume you will think between 1s and 20s per move in a 5 minute game
+        assert!(1_000 < t && t < 20_000, "1s < t({}s) < 10s", t / 1000);
     }
 }
