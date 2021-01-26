@@ -266,8 +266,22 @@ impl Board {
         buf.push(self.side_to_move.as_char());
         buf.push(' ');
 
-        // TODO: Handle castling
-        buf.push_str("KQkq");
+        // tfw tenary is too verbose for you
+        macro_rules! kk {
+            ($side:ident, $character:expr) => {
+                if self.can_castle_unchecked(CastlingSide::$side) {
+                    buf.push($character);
+                }
+            };
+        }
+        if self.castling != 0 {
+            kk!(WhiteKingside, 'K');
+            kk!(WhiteQueenside, 'Q');
+            kk!(BlackKingside, 'k');
+            kk!(BlackQueenside, 'q');
+        } else {
+            buf.push('-');
+        }
 
         // En-pasasnt
         buf.push(' ');
@@ -668,4 +682,29 @@ mod tests {
             "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         );
     }
+
+    macro_rules! test_to_fen {
+        ($name:ident, $fen:expr) => {
+            #[test]
+            fn $name() {
+                let fen = $fen;
+                let board = Board::from_fen(fen).unwrap();
+                assert_eq!(board.to_fen(), fen);
+            }
+        };
+    }
+    test_to_fen!(
+        black_castling,
+        "r1bqkb1r/1ppn2pp/p3p3/5p2/P1BPn3/4PN2/1PQ2PPP/RNB2RK1 w kq - 0 1"
+    );
+
+    test_to_fen!(
+        en_passant,
+        "rnbqkbnr/ppp3pp/4p3/3pPp2/8/1P6/P1PP1PPP/RNBQKBNR w KQkq f6 0 1"
+    );
+
+    test_to_fen!(
+        no_castling,
+        "1rbq1rk1/ppbn1pp1/4p2p/1P1pP3/3P2P1/PQN1BN2/1K3P1P/3R3R w - - 0 1"
+    );
 }
