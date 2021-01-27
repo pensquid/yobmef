@@ -22,12 +22,16 @@ if ! [ -f $BOOK ]; then
   # stdout and redirect to avoid this. (there should only be one file)
   unzip -p $BOOK.zip > $BOOK
 fi
+
+# Copy the latest yobmef so we don't get fucked on recompile.
+mkdir -p /tmp/yobmef
+cp ../target/release/yobmef /tmp/yobmef/latest
  
 c-chess-cli \
-  -engine cmd=yobmef \
+  -engine cmd=/tmp/yobmef/latest name='Yobmef DEV' \
   -engine cmd=$1 \
-  -each tc=10+0.1 -games 10 \
+  -each tc=10 -games 100 \
   -openings file=$BOOK \
-  -sprt elo0=0 elo1=5 \
+  -concurrency 2 \
   -resign 3 700 -draw 8 10 -log \
 
