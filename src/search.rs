@@ -4,6 +4,8 @@ use crate::movegen::MoveGen;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
+const INFINITY: i16 = i16::MAX;
+
 #[derive(Debug)]
 pub struct Limits {
     depth: Option<i16>,
@@ -125,10 +127,11 @@ impl Searcher {
 
         let mut depth = 1;
 
+        let color = board.side_to_move.polarize();
         loop {
             self.start_depth = depth;
 
-            let score = self.alphabeta(board, depth, i16::MIN, i16::MAX);
+            let score = color * self.alphabeta(board, depth, -INFINITY, INFINITY);
             let nps = (self.nodes as f64 / self.start.elapsed().as_secs_f64()) as u64;
             let pv = self.get_pv(board);
 
@@ -206,14 +209,8 @@ impl Searcher {
 
     // alphabeta search in a negamax framework.
     // 'alpha' is always our best score,
-    // 'beta'
-    pub fn alphabeta(
-        &mut self,
-        board: &Board,
-        mut depth: i16,
-        mut alpha: i16,
-        mut beta: i16,
-    ) -> i16 {
+    // 'beta' is always our opponent's best possible score
+    pub fn alphabeta(&mut self, board: &Board, mut depth: i16, mut alpha: i16, beta: i16) -> i16 {
         if self.should_stop() {
             return 0;
         }
@@ -223,7 +220,7 @@ impl Searcher {
         if let Some(sr) = self.tp.get(board) {
             if sr.depth >= depth {
                 self.cached += 1;
-                return sr.eval;
+                return sr.eval * board.side_to_move.polarize();
             }
 
             // TODO: Use sr as guess for the best move,
@@ -238,7 +235,7 @@ impl Searcher {
             // Easier to inline instead of calling `eval::get_score`
             // and then have to check if it returned eval::MATE.
             let score = if board.in_check() {
-                (depth + eval::MATE) * board.side_to_move.other().polarize()
+                -depth - eval::MATE
             } else {
                 0
             };
@@ -253,23 +250,13 @@ impl Searcher {
 
         if depth < 0 {
             // Quiet search!
-            let score = eval::get_score(board, is_game_over);
+            let score = eval::get_score(board, is_game_over) * board.side_to_move.polarize();
 
             // It is our move, so if the static score is already better then
             // Our previous best score, we can just return the static eval.
-            // TODO: Refactor into a negamax framework to cleanup this code.
             // FIXME: If we're in zugzwang, then this will prematurely prune.
-            match board.side_to_move {
-                Color::White => {
-                    if score >= alpha {
-                        return score;
-                    }
-                }
-                Color::Black => {
-                    if score <= beta {
-                        return score;
-                    }
-                }
+            if score >= alpha {
+                return score;
             }
 
             moves.retain(|mv| board.is_capture(&mv));
@@ -282,38 +269,19 @@ impl Searcher {
 
         sort_by_promise(board, &mut moves);
 
-        let mut score = -i16::MAX * board.side_to_move.polarize();
+        let mut score = -INFINITY;
         let mut best_move = moves[0].clone(); // moves len > 0 else gameover and return
 
-        // This is ugly, normally I would use higher order functions
-        // but this is easier to follow.
-        // TODO: Fix inconsitent usage of 'score' and 'eval'
-
-        if board.side_to_move == Color::White {
-            for mv in moves {
-                let mv_score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
-                if mv_score > score {
-                    score = mv_score;
-                    best_move = mv;
-                }
-
-                alpha = i16::max(alpha, score);
-                if beta <= alpha {
-                    break;
-                }
+        for mv in moves {
+            let mv_score = -self.alphabeta(&board.make_move(&mv), depth - 1, -beta, -alpha);
+            if mv_score > score {
+                score = mv_score;
+                best_move = mv;
             }
-        } else {
-            for mv in moves {
-                let mv_score = self.alphabeta(&board.make_move(&mv), depth - 1, alpha, beta);
-                if mv_score < score {
-                    score = mv_score;
-                    best_move = mv;
-                }
 
-                beta = i16::min(beta, score);
-                if beta <= alpha {
-                    break;
-                }
+            alpha = i16::max(alpha, score);
+            if beta <= alpha {
+                break;
             }
         }
 
@@ -324,7 +292,7 @@ impl Searcher {
             self.tp.insert(
                 board.clone(),
                 SearchResult {
-                    eval: score,
+                    eval: score * board.side_to_move.polarize(),
                     depth: depth,
                     mv: best_move,
                 },
