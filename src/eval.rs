@@ -1,5 +1,5 @@
 use crate::bitboard::BitBoard;
-use crate::chess::{Board, Color, Piece, Square};
+use crate::chess::{Board, Color, Movement, Piece, Square};
 
 // SHITTY SHIT HERE, JUST FOR EXPERIMENTATION, NOT FOR USE IN FINAL PROGRAM
 // Inspiration from:
@@ -109,15 +109,20 @@ fn multiply_table(bitboard: &BitBoard, table: [i16; 64], square_value: i16) -> i
 }
 
 #[inline]
-fn get_piece_score(board: &Board, color: Color, piece: Piece) -> i16 {
-    let value = match piece {
+fn get_piece_value(piece: Piece) -> i16 {
+    match piece {
         Piece::Pawn => 100,
         Piece::Knight => 320,
         Piece::Bishop => 330,
         Piece::Rook => 500,
         Piece::Queen => 975,
         _ => 0,
-    };
+    }
+}
+
+#[inline]
+fn get_piece_score(board: &Board, color: Color, piece: Piece) -> i16 {
+    let value = get_piece_value(piece);
     let table = match piece {
         Piece::Pawn => PAWN_VALUE_TABLE,
         Piece::Knight => KNIGHT_VALUE_TABLE,
@@ -178,10 +183,40 @@ pub fn get_score(board: &Board, game_over: bool) -> i16 {
     }
 }
 
+// How promising is the move, on the board? this returns
+// higher for more promise, lower for less. (relative to maker of mv)
+pub fn get_promise(board: &Board, mv: &Movement) -> i16 {
+    // let after_move = board.make_move(mv);
+    let mut p = 0; // board.side_to_move.polarize() * get_score_ongoing(&after_move);
+
+    let moved_piece = board.piece_on(mv.from_square).unwrap();
+
+    // most valuable victim, least valuable aggressor
+    if let Some(captured) = board.piece_on(mv.to_square) {
+        p += get_piece_value(captured);
+        p -= get_piece_value(moved_piece) / 100;
+    }
+
+    p
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{chess::Movement, movegen::MoveGen};
+
+    #[test]
+    fn test_get_promise() {
+        let b =
+            Board::from_fen("r1b2rk1/ppppnppp/2n2q2/2b1P3/3N4/2P1B3/PP3PPP/RN1QKB1R w KQ - 1 2")
+                .unwrap();
+        let d4c4 = Movement::from_notation("d4c6").unwrap();
+        let f1e2 = Movement::from_notation("f1e2").unwrap();
+        assert!(get_promise(&b, &d4c4) > get_promise(&b, &f1e2));
+
+        let pawn_takes_queen = Movement::from_notation("e5f6").unwrap();
+        assert!(get_promise(&b, &pawn_takes_queen) > get_promise(&b, &d4c4));
+    }
 
     #[test]
     fn test_get_score_e2e4() {

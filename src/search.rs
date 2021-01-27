@@ -1,4 +1,4 @@
-use crate::chess::{Board, Color, Movement};
+use crate::chess::{Board, Movement};
 use crate::eval;
 use crate::movegen::MoveGen;
 use std::collections::HashMap;
@@ -42,6 +42,8 @@ pub struct Searcher {
     // Search statistics
     pub nodes: u64, // including qs!
     pub cached: u64,
+    pub fail_high: u64,
+    pub fail_high_first: u64,
 
     // Used so I don't pass fucking everything as a parameter to alphabeta
     start_depth: i16, // start depth of this ID iteration
@@ -51,16 +53,6 @@ pub struct Searcher {
     start: Instant,
 }
 
-// Sorting is very important for alpha beta search pruning
-pub fn sort_by_promise(board: &Board, moves: &mut Vec<Movement>) {
-    let is_game_over = moves.len() == 0;
-
-    moves.sort_by_cached_key(|m| eval::get_score(&board.make_move(m), is_game_over));
-    if board.side_to_move == Color::White {
-        moves.reverse()
-    };
-}
-
 // TODO: Move this to movement?
 fn moves_to_str(moves: &Vec<Movement>) -> String {
     moves
@@ -68,6 +60,12 @@ fn moves_to_str(moves: &Vec<Movement>) -> String {
         .map(|mv| mv.to_notation())
         .collect::<Vec<String>>()
         .join(" ")
+}
+
+// Sorting is very important for alpha beta search pruning
+fn sort_by_promise(board: &Board, moves: &mut Vec<Movement>) {
+    // negate eval::get_promise because we're sorting lowest to highest
+    moves.sort_by_cached_key(|m| -eval::get_promise(&board, m));
 }
 
 impl Searcher {
@@ -80,6 +78,8 @@ impl Searcher {
             start_depth: 0,
             limits: Limits::none(),
             start: Instant::now(), // never used, reset in search() before a/b
+            fail_high_first: 0,
+            fail_high: 0,
         };
 
         // default to a 64mb hashtable (small)
@@ -148,6 +148,14 @@ impl Searcher {
                 self.start.elapsed().as_millis(),
                 moves_to_str(&pv),
             );
+            /*
+            eprintln!(
+                "move ordering {}/{} = {:.4}",
+                self.fail_high_first,
+                self.fail_high,
+                self.fail_high_first as f64 / self.fail_high as f64
+            );
+            */
 
             let sr = SearchResult {
                 eval: score,
@@ -198,6 +206,8 @@ impl Searcher {
     fn reset_stats(&mut self) {
         self.nodes = 0;
         self.cached = 0;
+        self.fail_high = 0;
+        self.fail_high_first = 0;
     }
 
     // Get the next PV move
@@ -251,7 +261,6 @@ impl Searcher {
         if depth < 0 {
             // Quiet search!
             let score = eval::get_score(board, is_game_over) * board.side_to_move.polarize();
-
             // It is our move, so if the static score is already better then
             // Our previous best score, we can just return the static eval.
             // FIXME: If we're in zugzwang, then this will prematurely prune.
@@ -272,7 +281,7 @@ impl Searcher {
         let mut score = -INFINITY;
         let mut best_move = moves[0].clone(); // moves len > 0 else gameover and return
 
-        for mv in moves {
+        for (i, mv) in moves.into_iter().enumerate() {
             let mv_score = -self.alphabeta(&board.make_move(&mv), depth - 1, -beta, -alpha);
             if mv_score > score {
                 score = mv_score;
@@ -280,7 +289,14 @@ impl Searcher {
             }
 
             alpha = i16::max(alpha, score);
+
             if beta <= alpha {
+                // Used to measure move ordering, we want to fail high first
+                // as much as possible. (ie. bring best move to front.)
+                self.fail_high += 1;
+                if i == 0 {
+                    self.fail_high_first += 1;
+                }
                 break;
             }
         }
