@@ -127,13 +127,14 @@ impl Searcher {
 
         let mut depth = 1;
 
-        let color = board.side_to_move.polarize();
         loop {
             self.start_depth = depth;
 
-            let score = color * self.alphabeta(board, depth, -INFINITY, INFINITY);
+            self.alphabeta(board, depth, -INFINITY, INFINITY);
             let nps = (self.nodes as f64 / self.start.elapsed().as_secs_f64()) as u64;
             let pv = self.get_pv(board);
+
+            let sr = self.tp.get(board).expect("no PV move in TP");
 
             // NOTE: Maybe we shoulden't print this if alphabeta prematurely exited?
             // I think its fine though, since we don't update PV on premature exit.
@@ -142,7 +143,7 @@ impl Searcher {
             println!(
                 "info depth {} score cp {} nodes {} nps {} time {} pv {}",
                 depth,
-                score,
+                sr.eval,
                 self.nodes,
                 nps,
                 self.start.elapsed().as_millis(),
@@ -157,15 +158,9 @@ impl Searcher {
             );
             */
 
-            let sr = SearchResult {
-                eval: score,
-                mv: pv.get(0).expect("pv empty, no legal moves?").clone(),
-                depth: depth,
-            };
-
             // Bound ply because of possible recursion limit in endgames.
             if self.should_stop() || depth >= self.limits.depth.unwrap_or(1000) {
-                return sr;
+                return sr.clone();
             }
             depth += 1;
         }
