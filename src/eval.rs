@@ -67,7 +67,7 @@ const QUEEN_VALUE_TABLE: [i16; 64] = [
 ];
 
 #[rustfmt::skip]
-const KING_VALUE_TABLE_MIDDLEGAME: [i16; 64] = [
+const KING_VALUE_TABLE: [i16; 64] = [
      20,  50,  40,    0,   0,  10,  50,   20,
      20,  20,   0,    0,   0,   0,  20,   20,
     -10, -20, -20,  -20, -20, -20, -20,  -10,
@@ -76,18 +76,6 @@ const KING_VALUE_TABLE_MIDDLEGAME: [i16; 64] = [
     -30, -40, -40,  -50, -50, -40, -40,  -30,
     -30, -40, -40,  -50, -50, -40, -40,  -30,
     -30, -40, -40,  -50, -50, -40, -40,  -30,
-];
-
-#[rustfmt::skip]
-const ATTACK_VALUE_TABLE: [i16; 64] = [
-    0,   0,    0,   0,   0,   0,   0,   0,
-    0,   10,   0,   0,   0,   0,   10,  0,
-    0,   20,   50,  40,  40,  50,  20,  0,
-    0,   26,   30,  80,  80,  30,  26,  0,
-    0,   26,   30,  80,  80,  30,  26,  0,
-    0,   20,   50,  40,  40,  50,  20,  0,
-    0,   10,   0,   0,   0,   0,   10,  0,
-    0,   0,    0,   0,   0,   0,   0,   0,
 ];
 
 // Not i16::MAX, because we use i16::MAX as infinity, ie.
@@ -129,7 +117,7 @@ fn get_piece_score(board: &Board, color: Color, piece: Piece) -> i16 {
         Piece::Bishop => BISHOP_VALUE_TABLE,
         Piece::Rook => ROOK_VALUE_TABLE,
         Piece::Queen => QUEEN_VALUE_TABLE,
-        Piece::King => KING_VALUE_TABLE_MIDDLEGAME,
+        Piece::King => KING_VALUE_TABLE,
     };
 
     let bitboard = board.pieces(piece);
@@ -138,7 +126,9 @@ fn get_piece_score(board: &Board, color: Color, piece: Piece) -> i16 {
         bitboard.flip_vertical_mut()
     };
 
-    multiply_table(&bitboard, table, value as i16)
+    let score = multiply_table(&bitboard, table, value as i16);
+    // eprintln!("{:?} {:?} value {}", color, piece, score);
+    score
 }
 
 #[inline]
@@ -156,15 +146,9 @@ fn get_piece_score_for_color(board: &Board, color: Color) -> i16 {
 pub fn get_score_ongoing(board: &Board) -> i16 {
     let mut score = 0;
 
-    score += get_piece_score_for_color(board, Color::White)
-        - get_piece_score_for_color(board, Color::Black);
-    score += 30 * board.side_to_move.polarize(); // Side to move gets inherent advantage
-
-    // This should probably account for how *many* pieces are attacking squares
-    let white_attacking = board.attacked(Color::White);
-    let black_attacking = board.attacked(Color::Black);
-    score += multiply_table(&white_attacking, ATTACK_VALUE_TABLE, 0);
-    score -= multiply_table(&black_attacking, ATTACK_VALUE_TABLE, 0);
+    score += get_piece_score_for_color(board, Color::White);
+    score -= get_piece_score_for_color(board, Color::Black);
+    score += 10 * board.side_to_move.polarize(); // Side to move gets inherent advantage
 
     score
 }
@@ -250,15 +234,38 @@ mod tests {
         assert_eq!(score, MATE);
     }
 
-    #[test]
-    fn test_get_score_castle() {
-        let mut b =
-            Board::from_fen("rnbqkb1r/ppp2ppp/3p1n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4")
-                .unwrap();
-        let score_1 = get_score(&b, MoveGen::new_legal(&b).count() == 0);
-        b.make_move_mut(&Movement::from_notation("e1g1").unwrap());
-        let score_2 = get_score(&b, MoveGen::new_legal(&b).count() == 0);
-        println!("{} should be > {}", score_2, score_1);
-        assert!(score_2 > score_1);
+    macro_rules! test_move_delta {
+        (name: $name:ident, fen: $fen:expr, mv: $mv:expr, assert: $assert:expr,) => {
+            #[test]
+            fn $name() {
+                let mut b = Board::from_fen($fen).unwrap();
+                let mv = Movement::from_notation($mv).unwrap();
+                let score_before = get_score(&b, MoveGen::new_legal(&b).count() == 0);
+                b.make_move_mut(&mv);
+                eprintln!("\n---- AFTER -----");
+                let score_after = get_score(&b, MoveGen::new_legal(&b).count() == 0);
+                let delta = score_after - score_before;
+                assert!(
+                    $assert(score_before, score_after, delta),
+                    "bad move delta {} for {}",
+                    delta,
+                    mv
+                );
+            }
+        };
     }
+
+    test_move_delta!(
+        name: test_reasonable_d2d4_value_delta,
+        fen: "r1bqkbnr/pppp1ppp/2n5/4N3/4P3/8/PPPP1PPP/RNBQKB1R b KQkq - 0 1",
+        mv: "d2d4",
+        assert: (|_,_,delta| delta < 200),
+    );
+
+    test_move_delta!(
+        name: test_get_score_castle,
+        fen: "rnbqkb1r/ppp2ppp/3p1n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4",
+        mv: "e1g1",
+        assert: (|before,after,_| after > before),
+    );
 }
