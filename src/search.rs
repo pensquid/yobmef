@@ -41,7 +41,6 @@ pub struct Searcher {
 
     // Search statistics
     pub nodes: u64, // including qs!
-    pub cached: u64,
     pub fail_high: u64,
     pub fail_high_first: u64,
 
@@ -72,7 +71,6 @@ impl Searcher {
     pub fn new() -> Self {
         let mut s = Searcher {
             nodes: 0,
-            cached: 0,
             tp: HashMap::new(),
             tp_max_len: 0,
             start_depth: 0,
@@ -200,7 +198,6 @@ impl Searcher {
 
     fn reset_stats(&mut self) {
         self.nodes = 0;
-        self.cached = 0;
         self.fail_high = 0;
         self.fail_high_first = 0;
     }
@@ -224,7 +221,6 @@ impl Searcher {
 
         if let Some(sr) = self.tp.get(board) {
             if sr.depth >= depth {
-                self.cached += 1;
                 return sr.eval * board.side_to_move.polarize();
             }
 
@@ -232,6 +228,8 @@ impl Searcher {
             // even if the depth is not sufficent to return it immediately.
         }
 
+        // TODO: Check game over without generating all legal moves (expensive). Since
+        // MoveGen lazily checks legality, this would be A LOT more efficent because of pruning.
         let mut moves: Vec<Movement> = MoveGen::new_legal(board).collect();
         let is_game_over = moves.len() == 0;
 
