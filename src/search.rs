@@ -53,7 +53,7 @@ pub struct Searcher {
 }
 
 // TODO: Move this to movement?
-fn moves_to_str(moves: &Vec<Movement>) -> String {
+fn moves_to_str(moves: &[Movement]) -> String {
     moves
         .iter()
         .map(|mv| mv.to_notation())
@@ -62,9 +62,9 @@ fn moves_to_str(moves: &Vec<Movement>) -> String {
 }
 
 // Sorting is very important for alpha beta search pruning
-fn sort_by_promise(board: &Board, moves: &mut Vec<Movement>) {
+fn sort_by_promise(board: &Board, moves: &mut [Movement]) {
     // negate eval::get_promise because we're sorting lowest to highest
-    moves.sort_by_cached_key(|m| -eval::get_promise(&board, m));
+    moves.sort_by_cached_key(|m| -eval::get_promise(board, m));
 }
 
 impl Searcher {
@@ -83,7 +83,7 @@ impl Searcher {
         // default to a 64mb hashtable (small)
         s.set_hash_size(64);
 
-        return s;
+        s
     }
 
     pub fn set_hash_size(&mut self, mb: usize) {
@@ -184,7 +184,7 @@ impl Searcher {
         let mut seen = HashSet::new();
 
         while let Some(mv) = self.get_pv_next(&curr) {
-            curr.make_move_mut(&mv);
+            curr.make_move_mut(mv);
             if seen.contains(&curr) {
                 // eprintln!("transposition!\n{}\nlastmove: {}", curr, mv);
                 break;
@@ -231,7 +231,7 @@ impl Searcher {
         // TODO: Check game over without generating all legal moves (expensive). Since
         // MoveGen lazily checks legality, this would be A LOT more efficent because of pruning.
         let mut moves: Vec<Movement> = MoveGen::new_legal(board).collect();
-        let is_game_over = moves.len() == 0;
+        let is_game_over = moves.is_empty();
 
         // NOTE: We don't store the static eval in the TP table, because we aren't whores.
         if is_game_over {
@@ -261,9 +261,9 @@ impl Searcher {
                 return score;
             }
 
-            moves.retain(|mv| board.is_capture(&mv));
+            moves.retain(|mv| board.is_capture(mv));
 
-            if moves.len() == 0 {
+            if moves.is_empty() {
                 // End of QS, no captures remain
                 return score;
             }
@@ -302,12 +302,18 @@ impl Searcher {
                 board.clone(),
                 SearchResult {
                     eval: score * board.side_to_move.polarize(),
-                    depth: depth,
+                    depth,
                     mv: best_move,
                 },
             );
         }
         score
+    }
+}
+
+impl Default for Searcher {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -322,7 +328,7 @@ mod tests {
             Board::from_fen("rn1qkbnr/ppp2ppp/3p4/4p2Q/2B1P1b1/8/PPPP1PPP/RNB1K1NR w KQkq - 2 4")
                 .unwrap();
 
-        let mut moves = MoveGen::new_legal(&board).collect();
+        let mut moves: Vec<Movement> = MoveGen::new_legal(&board).collect();
         sort_by_promise(&board, &mut moves);
 
         assert_eq!(moves[0], Movement::from_notation("h5f7").unwrap());

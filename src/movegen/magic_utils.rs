@@ -106,16 +106,16 @@ fn rook_directions() -> Vec<fn(Square) -> Option<Square>> {
 
 fn bishop_directions() -> Vec<fn(Square) -> Option<Square>> {
     fn nw(sq: Square) -> Option<Square> {
-        sq.left(1).map_or(None, |s| s.up(1))
+        sq.left(1).and_then(|s| s.up(1))
     }
     fn ne(sq: Square) -> Option<Square> {
-        sq.right(1).map_or(None, |s| s.up(1))
+        sq.right(1).and_then(|s| s.up(1))
     }
     fn sw(sq: Square) -> Option<Square> {
-        sq.left(1).map_or(None, |s| s.down(1))
+        sq.left(1).and_then(|s| s.down(1))
     }
     fn se(sq: Square) -> Option<Square> {
-        sq.right(1).map_or(None, |s| s.down(1))
+        sq.right(1).and_then(|s| s.down(1))
     }
 
     vec![nw, ne, sw, se]
@@ -171,7 +171,7 @@ pub fn get_questions_and_answers(sq: Square, piece: Piece) -> (Vec<BitBoard>, Ve
         for get_movement in directions.iter() {
             let mut next = get_movement(sq);
 
-            while next != None {
+            while next.is_some() {
                 answer ^= BitBoard(1 << next.unwrap().0);
 
                 if (BitBoard(1 << next.unwrap().0) & question) != BitBoard::empty() {

@@ -35,7 +35,7 @@ impl MoveGen {
     pub fn new_legal(board: &Board) -> MoveGen {
         let pseudolegal = get_pseudolegal_moves(board);
         MoveGen {
-            pseudolegal: pseudolegal,
+            pseudolegal,
             index: 0,
             iterator_mask: !BitBoard::empty(),
 
@@ -65,7 +65,7 @@ impl Iterator for MoveGen {
 
             // After the move, are we in check?
 
-            let after_move = self.board.make_move(&mv);
+            let after_move = self.board.make_move(mv);
             let attacks = after_move.attacked(after_move.side_to_move);
 
             let only_our_king = 1 << after_move.king(self.board.side_to_move).0;
@@ -75,7 +75,7 @@ impl Iterator for MoveGen {
             }
         }
 
-        return None;
+        None
     }
 }
 
@@ -90,23 +90,23 @@ pub fn get_pseudolegal_moves(board: &Board) -> Vec<Movement> {
 
 pub fn get_attacked_squares(board: &Board, color: Color) -> BitBoard {
     let mut attacks = BitBoard::empty();
-    attacks |= pawn::get_pawn_attacks(&board, color);
-    attacks |= knight::get_knight_attacks(&board, color);
-    attacks |= king::get_king_attacks(&board, color);
-    attacks |= magic::get_sliding_attacks(&board, color);
+    attacks |= pawn::get_pawn_attacks(board, color);
+    attacks |= knight::get_knight_attacks(board, color);
+    attacks |= king::get_king_attacks(board, color);
+    attacks |= magic::get_sliding_attacks(board, color);
     attacks
 }
 
 // For debugging, used in tests and for a debug command 'go perft depth'
 pub fn perft(board: &Board, depth: u16) -> u64 {
     if depth == 1 {
-        return MoveGen::new_legal(board).count() as u64;
+        MoveGen::new_legal(board).count() as u64
     } else {
         let mut n = 0;
         for mv in MoveGen::new_legal(board) {
             n += perft(&board.make_move(&mv), depth - 1);
         }
-        return n;
+        n
     }
 }
 

@@ -36,6 +36,7 @@ pub fn get_king_attacks(board: &Board, color: Color) -> BitBoard {
     let our_pieces = *board.color_combined(color);
     let king = *board.pieces(Piece::King) & our_pieces;
 
+    #[allow(clippy::never_loop)]
     for from_sq in king {
         attacks |= king_moves(from_sq);
 

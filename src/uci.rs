@@ -75,10 +75,10 @@ pub enum EngineMessage {
     DontMissTheShredderChessAnnualBarbeque, // Very important 10/10
 }
 
-fn get_moves(mut words: Split<char>) -> Option<Vec<chess::Movement>> {
+fn get_moves(words: Split<char>) -> Option<Vec<chess::Movement>> {
     let mut moves = Vec::new();
 
-    while let Some(word) = words.next() {
+    for word in words {
         moves.push(chess::Movement::from_notation(word)?);
     }
 
@@ -142,7 +142,7 @@ pub fn parse(s: &str) -> Option<EngineMessage> {
 
                     "searchmoves" => {
                         let mut moves = Vec::new();
-                        while let Some(word) = words.next() {
+                        for word in words.by_ref() {
                             moves.push(chess::Movement::from_notation(word)?);
                         }
 

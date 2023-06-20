@@ -32,11 +32,11 @@ impl fmt::Display for Board {
 
                 write!(f, " {}", character)?;
             }
-            write!(f, "\n")?;
+            writeln!(f)?;
         }
 
-        write!(f, "  a b c d e f g h\n")?;
-        write!(f, "fen: {}\n", self.to_fen())
+        writeln!(f, "  a b c d e f g h")?;
+        writeln!(f, "fen: {}", self.to_fen())
     }
 }
 
@@ -144,7 +144,7 @@ impl Board {
                 return Some(Piece::from_usize(piece).unwrap());
             }
         }
-        return None;
+        None
     }
 
     pub fn color_on(&self, square: Square) -> Option<Color> {
@@ -187,10 +187,10 @@ impl Board {
         let mut board = Board::empty();
 
         let mut fen_split = s.split(' ');
-        let mut board_split = fen_split.next()?.split('/');
+        let board_split = fen_split.next()?.split('/');
 
         let mut rank_index = 8;
-        while let Some(rank) = board_split.next() {
+        for rank in board_split {
             rank_index -= 1;
             let mut file_index: u8 = 0;
 
@@ -325,7 +325,7 @@ impl Board {
 
     pub fn make_move(&self, movement: &Movement) -> Board {
         let mut board = self.clone();
-        board.make_move_mut(&movement);
+        board.make_move_mut(movement);
         board
     }
 
@@ -369,8 +369,9 @@ impl Board {
 
             Piece::Rook => {
                 // You can no longer castle on this side after moving your rook.
-                CastlingSide::from_rook_square(movement.from_square)
-                    .map(|side| self.set_castling_mut(side, false));
+                if let Some(side) = CastlingSide::from_rook_square(movement.from_square) {
+                    self.set_castling_mut(side, false)
+                }
             }
 
             Piece::Pawn => {
@@ -430,7 +431,7 @@ impl Board {
     pub fn king(&self, color: Color) -> Square {
         let king_bb = self.pieces[Piece::King as usize] & self.color_combined[color as usize];
 
-        if !(king_bb.0.trailing_zeros() < 64) {
+        if king_bb.0.trailing_zeros() >= 64 {
             debug_assert!(king_bb.0.trailing_zeros() < 64);
         }
 

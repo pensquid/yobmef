@@ -61,7 +61,7 @@ fn engine_perft(path: &str, board: &Board, depth: u16) -> Result<PerftResults, B
 fn yobmef_perft(board: &Board, depth: u16) -> PerftResults {
     let mut res = Vec::new();
 
-    for mv in MoveGen::new_legal(&board) {
+    for mv in MoveGen::new_legal(board) {
         let nodes = perft(&board.make_move(&mv), depth - 1);
         res.push(PerftResult { mv, nodes });
     }

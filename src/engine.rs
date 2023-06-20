@@ -42,7 +42,7 @@ impl Engine {
         let board = &self.position;
 
         let mut nodes = 0;
-        for mv in MoveGen::new_legal(&board) {
+        for mv in MoveGen::new_legal(board) {
             let n = perft(&board.make_move(&mv), depth - 1);
             eprintln!("{}: {}", mv, n);
             nodes += n;
@@ -95,7 +95,7 @@ impl Engine {
             EngineMessage::Quit => std::process::exit(0),
 
             EngineMessage::Position(board, moves) => {
-                let mut board: Board = board.clone();
+                let mut board: Board = board;
                 for movement in moves {
                     board.make_move_mut(&movement);
                 }
@@ -107,6 +107,12 @@ impl Engine {
 
             _ => {}
         }
+    }
+}
+
+impl Default for Engine {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

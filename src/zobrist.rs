@@ -16,6 +16,7 @@ pub fn init_once() {
     START.call_once(|| {
         let mut rng = StdRng::from_entropy();
 
+        #[allow(clippy::needless_range_loop)]
         for i in 0..NUM_RANDOMS {
             for j in 0..64 {
                 unsafe {

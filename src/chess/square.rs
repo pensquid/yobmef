@@ -25,10 +25,10 @@ impl Square {
         let file = chars.next()? as u8;
         let rank = chars.next()? as u8;
 
-        if rank < b'1' || rank > b'8' {
+        if !(b'1'..=b'8').contains(&rank) {
             return None;
         }
-        if file < b'a' || file > b'h' {
+        if !(b'a'..=b'h').contains(&file) {
             return None;
         }
 

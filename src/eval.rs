@@ -126,9 +126,8 @@ fn get_piece_score(board: &Board, color: Color, piece: Piece) -> i16 {
         bitboard.flip_vertical_mut()
     };
 
-    let score = multiply_table(&bitboard, table, value as i16);
+    multiply_table(&bitboard, table, value)
     // eprintln!("{:?} {:?} value {}", color, piece, score);
-    score
 }
 
 #[inline]
@@ -237,6 +236,7 @@ mod tests {
     macro_rules! test_move_delta {
         (name: $name:ident, fen: $fen:expr, mv: $mv:expr, assert: $assert:expr,) => {
             #[test]
+            #[allow(clippy::redundant_closure_call)]
             fn $name() {
                 let mut b = Board::from_fen($fen).unwrap();
                 let mv = Movement::from_notation($mv).unwrap();

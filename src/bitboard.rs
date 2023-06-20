@@ -17,7 +17,7 @@ impl fmt::Display for BitBoard {
                 let sq = Square::new(rank_index, file_index);
                 write!(f, " {}", if self.get(sq) { 'X' } else { '.' })?;
             }
-            write!(f, "\n")?;
+            writeln!(f)?;
         }
 
         write!(f, "  a b c d e f g h")
@@ -46,7 +46,7 @@ impl BitBoard {
     }
 
     pub fn flip_vertical(&self) -> BitBoard {
-        let mut board = self.clone();
+        let mut board = *self;
         board.flip_vertical_mut();
         board
     }
@@ -96,7 +96,7 @@ impl BitBoard {
     // If the bitboard has multiple bits flipped,
     // This function must still return a valid square.
     #[inline]
-    fn to_square(&self) -> Square {
+    fn as_square(&self) -> Square {
         debug_assert!(self.0 != 0, "empty board cannot be made into a square");
         Square(self.0.trailing_zeros() as u8)
     }
@@ -108,9 +108,9 @@ impl Iterator for BitBoard {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.0 == 0 {
-            return None;
+            None
         } else {
-            let result = self.to_square();
+            let result = self.as_square();
             *self ^= BitBoard::from_square(result);
             Some(result)
         }
@@ -154,7 +154,7 @@ macro_rules! impl_op_assign {
         }
         impl<'b> $op<&'b Self> for BitBoard {
             fn $fun(&mut self, rhs: &'b Self) {
-                &self.0.$fun(rhs.0);
+                self.0.$fun(rhs.0);
             }
         }
         impl<'a> $op<Self> for &'a mut BitBoard {
@@ -235,16 +235,16 @@ mod tests {
     #[test]
     fn test_bitboard_get_flip() {
         let b = BitBoard::empty();
-        assert_eq!(b.get(Square::new(0, 0)), false);
+        assert!(!b.get(Square::new(0, 0)));
 
         let b2 = b.flip(Square::new(0, 3));
         eprintln!("b2: {:?}", b2);
-        assert_eq!(b2.get(Square::new(0, 3)), true);
+        assert!(b2.get(Square::new(0, 3)));
 
         let b3 = b2.flip(Square::new(0, 0));
         eprintln!("b3: {:?}", b3);
-        assert_eq!(b3.get(Square::new(0, 0)), true);
-        assert_eq!(b3.get(Square::new(0, 3)), true);
+        assert!(b3.get(Square::new(0, 0)));
+        assert!(b3.get(Square::new(0, 3)));
     }
 
     #[test]

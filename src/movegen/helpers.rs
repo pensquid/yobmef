@@ -15,13 +15,13 @@ pub const G_FILE: u64 = A_FILE << 6;
 pub const H_FILE: u64 = A_FILE << 7;
 
 pub const RANK_1: u64 = 0x0000000000000ff;
-pub const RANK_2: u64 = RANK_1 << 8 * 1;
-pub const RANK_3: u64 = RANK_1 << 8 * 2;
-pub const RANK_4: u64 = RANK_1 << 8 * 3;
-pub const RANK_5: u64 = RANK_1 << 8 * 4;
-pub const RANK_6: u64 = RANK_1 << 8 * 5;
-pub const RANK_7: u64 = RANK_1 << 8 * 6;
-pub const RANK_8: u64 = RANK_1 << 8 * 7;
+pub const RANK_2: u64 = RANK_1 << 8;
+pub const RANK_3: u64 = RANK_1 << (8 * 2);
+pub const RANK_4: u64 = RANK_1 << (8 * 3);
+pub const RANK_5: u64 = RANK_1 << (8 * 4);
+pub const RANK_6: u64 = RANK_1 << (8 * 5);
+pub const RANK_7: u64 = RANK_1 << (8 * 6);
+pub const RANK_8: u64 = RANK_1 << (8 * 7);
 
 pub const NOT_A_FILE: u64 = !A_FILE;
 pub const NOT_H_FILE: u64 = !H_FILE;
@@ -30,13 +30,13 @@ pub const NOT_GH_FILE: u64 = !(G_FILE | H_FILE);
 
 pub const NOT_EDGES: u64 = !(A_FILE | H_FILE | RANK_1 | RANK_8);
 
-pub fn moves_to_str(moves: &Vec<Movement>) -> String {
+pub fn moves_to_str(moves: &[Movement]) -> String {
     let s = moves
         .iter()
         .map(|mv| mv.to_notation())
         .collect::<Vec<String>>()
         .join(", ");
-    if s == "" {
+    if s.is_empty() {
         "<none>".to_string()
     } else {
         s
@@ -44,7 +44,7 @@ pub fn moves_to_str(moves: &Vec<Movement>) -> String {
 }
 
 pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
-    let moves: Vec<Movement> = MoveGen::new_legal(&board).collect();
+    let moves: Vec<Movement> = MoveGen::new_legal(board).collect();
 
     let legal_str = moves_to_str(&moves);
 
@@ -55,7 +55,7 @@ pub fn moves_test(board: &Board, legal: &str, illegal: &str) {
         }
     }
 
-    if illegal != "" {
+    if !illegal.is_empty() {
         for lan in illegal.split(' ') {
             if moves.contains(&Movement::from_notation(lan).unwrap()) {
                 eprintln!("{}", board);
@@ -75,7 +75,7 @@ pub fn bitboard_test(board: &BitBoard, included: &str, excluded: &str) {
         }
     }
 
-    if excluded != "" {
+    if !excluded.is_empty() {
         for coord in excluded.split(' ') {
             if squares.contains(&Square::from_notation(coord).unwrap()) {
                 eprintln!("{}", board);

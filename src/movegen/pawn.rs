@@ -77,7 +77,7 @@ pub fn get_pawn_moves(board: &Board, moves: &mut Vec<Movement>, color: Color) {
     let pushes_mask = !board.combined();
     let my_pawns = *board.pieces(Piece::Pawn) & *board.color_combined(color);
 
-    let mut their_pieces = board.color_combined(color.other()).clone();
+    let mut their_pieces = *board.color_combined(color.other());
     if let Some(sq) = board.en_passant {
         their_pieces.flip_mut(sq);
     }

@@ -4,7 +4,7 @@ use yobmef::{
 };
 
 fn test_perft(board: &Board, depth: u16, want: u64) {
-    let got = perft(&board, depth);
+    let got = perft(board, depth);
     assert_eq!(
         got,
         want,
